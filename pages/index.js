@@ -14,7 +14,7 @@ export default function Home() {
 
   return (
     <div className="container">
-      <div className="title">Welcome to Echoes v0.1</div>
+      <div className="title">Welcome to Echoes v0.2</div>
       <div className="subtitle">Your self-discovery journey begins here.</div>
     </div>
   );
