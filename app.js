@@ -1,65 +1,23 @@
-// Basic Echoes v0.2 Logic
+// app.js
 
-const onboardingData = [
-  {
-    question: "Which of these do you most resonate with?",
-    options: ["Strategy", "Creativity", "Empathy", "Courage"],
-  },
-  {
-    question: "Choose a world you feel drawn to:",
-    options: ["Fantasy (e.g., Empyrean)", "Sci-Fi (e.g., Mass Effect)", "Historical (e.g., Churchill era)", "Modern (e.g., Tech Pioneers)"],
-  }
-];
+"use client";
 
-let currentQuestion = 0;
-let selectedTraits = [];
+import { useEffect, useState } from "react";
+import "./style.css";
 
-function startOnboarding() {
-  renderQuestion();
+export default function App() {
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  if (!mounted) return null; // Prevent server-side mismatch
+
+  return (
+    <div className="container">
+      <div className="title">Welcome to Echoes v0.1</div>
+      <div className="subtitle">Your self-discovery journey begins here.</div>
+    </div>
+  );
 }
-
-function renderQuestion() {
-  const container = document.getElementById('onboarding');
-  container.innerHTML = '';
-
-  const q = document.createElement('h2');
-  q.innerText = onboardingData[currentQuestion].question;
-  container.appendChild(q);
-
-  onboardingData[currentQuestion].options.forEach(option => {
-    const btn = document.createElement('button');
-    btn.innerText = option;
-    btn.onclick = () => selectOption(option);
-    container.appendChild(btn);
-  });
-}
-
-function selectOption(option) {
-  selectedTraits.push(option);
-  currentQuestion++;
-
-  if (currentQuestion < onboardingData.length) {
-    renderQuestion();
-  } else {
-    showResult();
-  }
-}
-
-function showResult() {
-  const onboarding = document.getElementById('onboarding');
-  const chat = document.getElementById('chat');
-
-  onboarding.style.display = 'none';
-  chat.style.display = 'block';
-
-  const result = document.createElement('h2');
-  result.innerText = `You are matched with the world of ${selectedTraits[1]} and the trait of ${selectedTraits[0]}.`;
-
-  const intro = document.createElement('p');
-  intro.innerText = `Your journey begins now... (future real hero conversations will load here)`;
-
-  chat.appendChild(result);
-  chat.appendChild(intro);
-}
-
-startOnboarding();
