@@ -1,18 +1,18 @@
-// app.js
+// pages/index.js
 
 "use client";
 
 import { useEffect, useState } from "react";
-import "./style.css";
+import "../style.css";
 
-export default function App() {
+export default function Home() {
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
     setMounted(true);
   }, []);
 
-  if (!mounted) return null; // Prevent server-side mismatch
+  if (!mounted) return null;
 
   return (
     <div className="container">
