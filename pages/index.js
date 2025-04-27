@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import "../style.css";
+import "../style.css";  // make sure this path is correct
 
 export default function Home() {
   const [mounted, setMounted] = useState(false);
@@ -10,11 +10,11 @@ export default function Home() {
     setMounted(true);
   }, []);
 
-  if (!mounted) return null;
+  if (!mounted) return <div />; // ← CHANGE: safer fallback for SSR build
 
   return (
     <div className="container">
-      <div className="title">Welcome to Echoes v0.2</div>
+      <div className="title">Welcome to Echoes v0.1</div>
       <div className="subtitle">Your self-discovery journey begins here.</div>
     </div>
   );
