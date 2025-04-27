@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import "../style.css";  // make sure this path is correct
 
 export default function Home() {
   const [mounted, setMounted] = useState(false);
