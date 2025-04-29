@@ -5,49 +5,40 @@ import { useState } from "react";
 import styles from "./TraitForm.module.css";
 
 export default function TraitForm({ onSubmit }) {
-  const [input, setInput] = useState("");
-  const [draft, setDraft] = useState([]);
+  const [input, setInput]   = useState("");
+  const [loading, setLoad ] = useState(false);
 
-  function addTrait() {
-    const trimmed = input.trim();
-    if (!trimmed) return;
-    setDraft([...draft, trimmed]);
-    setInput("");
+  async function discover() {
+    if (!input.trim()) return;
+    setLoad(true);
+
+    const res   = await fetch("/api/extractTraits", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ userInput: input })
+    });
+    const data  = await res.json();
+    const traits = data.traits.split(",").map((t) => t.trim());
+    setLoad(false);
+    onSubmit(traits);
   }
 
   return (
-    <div className={styles.traitForm}>
-      <h1 className={styles.headline}>Begin Your Echo</h1>
-      <p className={styles.helper}>Enter 3-6 strengths, passions, or qualities</p>
+    <div className={styles.wrapper}>
+      <h1 className={styles.title}>Begin Your Echo</h1>
+      <p className={styles.helper}>Describe yourself in a few sentences</p>
 
-      <input
+      <textarea
         className={styles.input}
+        rows={5}
         value={input}
         onChange={(e) => setInput(e.target.value)}
-        placeholder="Type a trait then press Enter…"
-        onKeyDown={(e) => e.key === "Enter" && addTrait()}
+        placeholder="Write freely…"
       />
 
-      <button onClick={addTrait} className={styles.addBtn}>
-        Add
+      <button onClick={discover} className={styles.discoverBtn} disabled={loading}>
+        {loading ? "Discovering…" : "Discover"}
       </button>
-
-      {draft.length > 0 && (
-        <>
-          <ul className={styles.list}>
-            {draft.map((t) => (
-              <li key={t}>{t}</li>
-            ))}
-          </ul>
-
-          <button
-            onClick={() => onSubmit(draft)}
-            className={styles.discoverBtn}
-          >
-            Discover
-          </button>
-        </>
-      )}
     </div>
   );
 }
