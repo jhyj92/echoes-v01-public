@@ -15,12 +15,12 @@ export default function GuidePage() {
   const [aiLine, setAI]   = useState("");
 
   useEffect(() => {
-    const domain = JSON.parse(localStorage.getItem("echoes_domain") || "null");
-    if (!domain) {
+    const traits = JSON.parse(localStorage.getItem("echoes_traits") || "[]");
+    if (!traits.length) {
       router.replace("/");
       return;
     }
-    setGuide(assignGuide(domain));
+    setGuide(assignGuide(traits));
   }, []);
 
   async function triggerAIReflect() {
