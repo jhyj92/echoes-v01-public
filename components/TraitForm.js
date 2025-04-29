@@ -1,14 +1,14 @@
- // components/TraitForm.js
- "use client";
+// components/TraitForm.js
+"use client";
 
- import { useState } from "react";
-+import styles from "./TraitForm.module.css";
+import { useState } from "react";
+import styles from "./TraitForm.module.css";
 
- export default function TraitForm({ onSubmit }) {
-   const [input, setInput] = useState("");
-   const [draft, setDraft] = useState([]);
+export default function TraitForm({ onSubmit }) {
+  const [input, setInput] = useState("");
+  const [draft, setDraft] = useState([]);
 
-   function addTrait() {
+  function addTrait() {
 @@
    }
 
