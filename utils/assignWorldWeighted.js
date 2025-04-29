@@ -1,22 +1,41 @@
 // utils/assignWorldWeighted.js
+
 import { WORLDS } from "@/data/worlds";
 
-// Very-light weighting for v0.2
+/**
+ * assignWorldWeighted
+ * - Takes an array of user traits (strings).
+ * - Scores each world by:
+ *     + +3 points per matched weightKeyword
+ *     + +1 point per matched softKeyword
+ * - Returns the world object with the highest total score.
+ * - Ties broken by first appearance in WORLDS.
+ */
 export default function assignWorldWeighted(traitsRaw = []) {
-  const traits = traitsRaw.map((t) => t.toLowerCase().trim());
+  const traits = traitsRaw
+    .map((t) => t.toLowerCase().trim())
+    .slice(0, 4); // consider only top 4 traits
 
-  const scored = WORLDS.map((w) => {
+  // Compute scores
+  const scored = WORLDS.map((world) => {
     let score = 0;
-    traits.forEach((t) => {
-      if (w.keywords.includes(t)) score += 2;          // simple match weight
-    });
-    return { world: w, score };
+    for (const t of traits) {
+      if (world.weightKeywords.includes(t)) score += 3;
+      else if (world.softKeywords.includes(t)) score += 1;
+    }
+    return { world, score };
   });
 
-  const best = scored.sort((a, b) => b.score - a.score)[0];
+  // Find best
+  const best = scored.reduce((prev, cur) => {
+    if (cur.score > prev.score) return cur;
+    return prev;
+  }, scored[0]);
 
-  // fallback to Echo Fields if no match
-  return best.score === 0
-    ? WORLDS.find((w) => w.id === "echoFields")
-    : best.world;
+  // If everyone scores zero, default to Echo Fields
+  if (best.score === 0) {
+    return WORLDS.find((w) => w.id === "echoFields");
+  }
+
+  return best.world;
 }
