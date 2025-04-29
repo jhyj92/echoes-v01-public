@@ -1,24 +1,14 @@
 // utils/assignGuide.js
-import { guides } from "@/data/guides";
+// Very light v0.2 mapping: dominant domain ➜ guide archetype
+// In v0.3 you’ll expand this list + add weighted logic.
 
-/**
- * Pick the guide whose domain list overlaps most with userTraits.
- * Break ties by first declared in array.
- */
-export function assignGuide(userTraits = []) {
-  if (!Array.isArray(userTraits) || !userTraits.length) return guides[0];
+const GUIDE_MAP = {
+  creativity: "The Dreamweaver",
+  analysis: "The Strategist",
+  courage: "The Guardian",
+  curiosity: "The Seeker",
+};
 
-  // very simple similarity: count shared keywords
-  let best = guides[0];
-  let bestScore = 0;
-
-  guides.forEach(g => {
-    const score = g.domains.filter(d => userTraits.includes(d)).length;
-    if (score > bestScore) {
-      best = g;
-      bestScore = score;
-    }
-  });
-
-  return best;
+export default function assignGuide(domain) {
+  return GUIDE_MAP[domain] || "The Wanderer";
 }
