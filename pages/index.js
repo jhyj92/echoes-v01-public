@@ -1,15 +1,14 @@
 // pages/index.js
 "use client";
 
-import { useState, useEffect } from 'react';
-import TraitForm from '@/components/TraitForm';
-import WorldReveal from '@/components/WorldReveal';
-import assignWorldWeighted from '@/utils/assignWorldWeighted';
-import { useLocalState } from '@/hooks/useLocalState';
-import '@/styles/themes.css';
+import { useState, useEffect } from "react";
+import TraitForm from "@/components/TraitForm";
+import WorldReveal from "@/components/WorldReveal";
+import assignWorldWeighted from "@/utils/assignWorldWeighted";
+import useLocalState from "@/hooks/useLocalState";
 
 export default function Home() {
-  const [savedWorld, setSavedWorld] = useLocalState('echoes_world', null);
+  const [savedWorld, setSavedWorld] = useLocalState("echoes_world", null);
   const [world, setWorld] = useState(savedWorld);
 
   useEffect(() => {
@@ -17,10 +16,10 @@ export default function Home() {
   }, [world]);
 
   return (
-    <main className={world ? world.theme : 'theme-base'}>
+    <main className={world ? world.theme : "theme-base"}>
       {!world && (
         <TraitForm
-          onSubmit={traits => {
+          onSubmit={(traits) => {
             const w = assignWorldWeighted(traits);
             setWorld(w);
           }}
