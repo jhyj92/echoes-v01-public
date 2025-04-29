@@ -1,21 +1,59 @@
-/* Animated starfield background */
-@keyframes twinkle { 0%,100% {opacity: .9;} 50% {opacity:.4;} }
+/* styles/starfield.css */
 
-html,body {
-  margin:0; height:100%; background:#0B0D11; color:#E6DCC8;
-  font-family:"EB Garamond",serif; /* poetic serif */
+/* Animated starfield background */
+@keyframes twinkle {
+  0%, 100% { opacity: .9; }
+  50% { opacity: .4; }
+}
+
+html, body {
+  margin: 0;
+  height: 100%;
+  background: var(--bg-accent, #0B0D11);
+  color: var(--clr-primary, #E6DCC8);
+  font-family: "EB Garamond", serif;
 }
 
 .starfield {
-  position:fixed; inset:0; z-index:-1;
-  background:url("https://raw.githubusercontent.com/KhronosRelease/media/master/Textures/Stars/starfield.png") repeat;
-  animation:twinkle 8s infinite alternate;
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  background: url("https://raw.githubusercontent.com/KhronosRelease/media/master/Textures/Stars/starfield.png") repeat;
+  animation: twinkle 8s infinite alternate;
 }
 
-.button-poetic {
-  padding:12px 28px; border:1px solid #C8AE7D; color:#C8AE7D;
-  background:transparent; font-size:1.2rem; cursor:pointer;
-  transition:background .4s ease,color .4s ease;
+/* world-specific palettes */
+:root {
+  --clr-primary: #C8AE7D;
+  --bg-accent:  #0B0D11;
 }
-.button-poetic:hover {background:#C8AE7D20;color:#FFF;}
-.fade {animation:fade 1s ease both;} @keyframes fade{from{opacity:0}to{opacity:1}}
+.theme-dreamSea   { --clr-primary: #7EAED6; --bg-accent: #071018; }
+.theme-emberwake  { --clr-primary: #FF9955; --bg-accent: #150A04; }
+.theme-crystalLab { --clr-primary: #A0E2F7; --bg-accent: #041017; }
+.theme-echoFields { --clr-primary: #E6DCC8; --bg-accent: #0B0D11; }
+
+/* global use */
+body {
+  background: var(--bg-accent);
+  color: var(--clr-primary);
+}
+.button-poetic {
+  padding: 12px 28px;
+  border: 1px solid var(--clr-primary);
+  color: var(--clr-primary);
+  background: transparent;
+  font-size: 1.2rem;
+  cursor: pointer;
+  transition: background .4s ease, color .4s ease;
+}
+.button-poetic:hover {
+  background: var(--clr-primary)20;
+  color: #FFF;
+}
+.fade {
+  animation: fade 1s ease both;
+}
+@keyframes fade {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
