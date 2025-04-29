@@ -5,7 +5,7 @@ import { useState, useEffect } from "react";
 import TraitForm from "@/components/TraitForm";
 import WorldReveal from "@/components/WorldReveal";
 import assignWorldWeighted from "@/utils/assignWorldWeighted";
-import useLocalState from "@/hooks/useLocalState";
+import { useLocalState } from "@/hooks/useLocalState";
 
 export default function Home() {
   const [savedWorld, setSavedWorld] = useLocalState("echoes_world", null);
