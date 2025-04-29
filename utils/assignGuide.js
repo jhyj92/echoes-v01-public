@@ -1,14 +1,15 @@
 // utils/assignGuide.js
-// Very light v0.2 mapping: dominant domain ➜ guide archetype
-// In v0.3 you’ll expand this list + add weighted logic.
+import { guides } from "@/data/guides";
 
-const GUIDE_MAP = {
-  creativity: "The Dreamweaver",
-  analysis: "The Strategist",
-  courage: "The Guardian",
-  curiosity: "The Seeker",
-};
+// Choose guide with most domain overlap (v0.2 simple)
+export default function assignGuide(traits = []) {
+  const lower = traits.map((t) => t.toLowerCase());
 
-export default function assignGuide(domain) {
-  return GUIDE_MAP[domain] || "The Wanderer";
+  const scored = guides.map((g) => {
+    const overlap = g.domains.filter((d) => lower.includes(d)).length;
+    return { guide: g, score: overlap };
+  });
+
+  const best = scored.sort((a, b) => b.score - a.score)[0];
+  return best.score === 0 ? guides[0] : best.guide;
 }
