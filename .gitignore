@@ -1,3 +1,2 @@
-# Always ignore local env & log files
-.env*
-!.env.example
+# Example template (no secrets)
+OPENROUTER_KEYS=your_api_key_here
