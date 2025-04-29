@@ -1,2 +1,3 @@
-# File: .env.example
-OPENROUTER_KEY_1=your_api_key_here
+# Always ignore local env & log files
+.env*
+!.env.example
