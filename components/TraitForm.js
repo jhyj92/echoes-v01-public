@@ -1,26 +1,33 @@
 // components/TraitForm.js
+
 "use client";
 
 import { useState } from "react";
 import styles from "./TraitForm.module.css";
 
 export default function TraitForm({ onSubmit }) {
-  const [input, setInput]   = useState("");
-  const [loading, setLoad ] = useState(false);
+  const [input,  setInput ] = useState("");
+  const [loading,setLoad ] = useState(false);
+  const [error,  setErr   ] = useState("");
 
   async function discover() {
     if (!input.trim()) return;
     setLoad(true);
-
-    const res   = await fetch("/api/extractTraits", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ userInput: input })
-    });
-    const data  = await res.json();
-    const traits = data.traits.split(",").map((t) => t.trim());
-    setLoad(false);
-    onSubmit(traits);
+    setErr("");
+    try {
+      const res = await fetch("/api/extractTraits", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ userInput: input })
+      });
+      const { traits } = await res.json();
+      const list = traits.split(",").map((t) => t.trim());
+      onSubmit(list);
+    } catch (e) {
+      setErr("The echoes are quiet right now. Try again in a moment.");
+    } finally {
+      setLoad(false);
+    }
   }
 
   return (
@@ -36,9 +43,19 @@ export default function TraitForm({ onSubmit }) {
         placeholder="Write freely…"
       />
 
-      <button onClick={discover} className={styles.discoverBtn} disabled={loading}>
+      <button
+        onClick={discover}
+        className={styles.discoverBtn}
+        disabled={loading}
+      >
         {loading ? "Discovering…" : "Discover"}
       </button>
+
+      {error && (
+        <p style={{ color: "#F66", marginTop: "12px" }}>
+          {error}
+        </p>
+      )}
     </div>
   );
 }
