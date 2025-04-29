@@ -1,4 +1,3 @@
-// pages/guide.js
 "use client";
 
 import { useEffect, useState } from "react";
@@ -10,17 +9,15 @@ export default function GuidePage() {
   const [guide, setGuide] = useState(null);
 
   useEffect(() => {
-    const traits = JSON.parse(localStorage.getItem("echoes_traits") || "[]");
-
-    if (!traits.length) {
+    const domain = JSON.parse(localStorage.getItem("echoes_domain") || "null");
+    if (!domain) {
       router.replace("/");
       return;
     }
-
-    setGuide(assignGuide(traits));
+    setGuide(assignGuide(domain));
   }, []);
 
-  if (!guide) return null; // loading
+  if (!guide) return null;
 
   return (
     <main className="guide-screen">
