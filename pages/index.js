@@ -3,37 +3,34 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/router";
 import TraitForm from "@/components/TraitForm";
-import WorldReveal from "@/components/WorldReveal";
 import assignWorldWeighted from "@/utils/assignWorldWeighted";
 import categoriseDomains from "@/utils/categoriseDomains";
 import { useLocalState } from "@/hooks/useLocalState";
 
 export default function Home() {
-  const [world,  setWorld]  = useLocalState("echoes_world",  null);
-  const [traits]           = useLocalState("echoes_traits", []);
-  const router              = useRouter();
+  const [world] = useLocalState("echoes_world", null);
+  const router  = useRouter();
 
-  // ⬇️  redirect if user already has a world + traits
+  // returning users jump straight to /guide
   useEffect(() => {
+    const traits = JSON.parse(localStorage.getItem("echoes_traits") || "[]");
     if (world && traits.length) router.replace("/guide");
   }, []);
 
   return (
-    <main className={world ? world.theme : "theme-base"}>
-      {!world && (
-        <TraitForm
-          onSubmit={(t) => {
-            const w = assignWorldWeighted(t);
-            const d = categoriseDomains(t);
-            localStorage.setItem("echoes_traits",  JSON.stringify(t));
-            localStorage.setItem("echoes_domain",  JSON.stringify(d));
-            localStorage.setItem("echoes_world",   JSON.stringify(w));
-            setWorld(w);
-            router.push("/guide");            // first-time jump
-          }}
-        />
-      )}
-      <WorldReveal world={world} />
+    <main className="theme-base">
+      <TraitForm
+        onSubmit={(traits) => {
+          const w = assignWorldWeighted(traits);
+          const d = categoriseDomains(traits);
+
+          localStorage.setItem("echoes_traits", JSON.stringify(traits));
+          localStorage.setItem("echoes_domain", JSON.stringify(d));
+          localStorage.setItem("echoes_world",  JSON.stringify(w));
+
+          router.push("/world");           // ▶ flow: reveal world first
+        }}
+      />
     </main>
   );
 }
