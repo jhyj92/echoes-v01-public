@@ -1,29 +1,33 @@
 // data/worlds.js
-// v0.2 minimal starter worlds list used by assignWorldWeighted()
 
+// v0.3 World definitions with precise weight & soft keywords
 export const WORLDS = [
   {
     id: "dreamSea",
     name: "Dream-Sea Realm",
     theme: "theme-dreamSea",
-    keywords: ["creativity", "imagination", "empathy"],
+    weightKeywords: ["creativity", "imagination", "vision"],
+    softKeywords:   ["empathy", "curiosity", "wonder"],
   },
   {
     id: "crystalLab",
     name: "Crystalline Labyrinth",
     theme: "theme-crystalLab",
-    keywords: ["strategy", "analysis", "logic"],
+    weightKeywords: ["analysis", "logic", "precision"],
+    softKeywords:   ["strategy", "planning", "focus"],
   },
   {
     id: "emberwake",
     name: "Emberwake Highlands",
     theme: "theme-emberwake",
-    keywords: ["courage", "leadership", "passion"],
+    weightKeywords: ["courage", "leadership", "passion"],
+    softKeywords:   ["resilience", "bravery", "drive"],
   },
   {
     id: "echoFields",
     name: "Shifting Echo Fields",
     theme: "theme-echoFields",
-    keywords: ["adaptability", "curiosity", "exploration"],
-  },
+    weightKeywords: ["adaptability", "curiosity", "exploration"],
+    softKeywords:   ["flexibility", "openness", "innovation"],
+  }
 ];
