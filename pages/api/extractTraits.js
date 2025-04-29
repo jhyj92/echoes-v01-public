@@ -1,10 +1,10 @@
+// pages/api/extractTraits.js
+
 import dotenv from "dotenv";
 dotenv.config();
 
-// Rotate through multiple keys if OPENROUTER_KEYS="key1,key2"
-const OPENROUTER_KEYS = (process.env.OPENROUTER_KEYS || process.env.OPENROUTER_KEY_1 || "").split(",");
+const OPENROUTER_KEYS = (process.env.OPENROUTER_KEYS || "").split(",");
 let keyIndex = 0;
-
 function nextKey() {
   const key = OPENROUTER_KEYS[keyIndex % OPENROUTER_KEYS.length].trim();
   keyIndex += 1;
@@ -15,7 +15,6 @@ export default async function handler(req, res) {
   if (req.method !== "POST") {
     return res.status(405).json({ error: "Method Not Allowed" });
   }
-
   const { userInput } = req.body || {};
   if (!userInput || typeof userInput !== "string") {
     return res.status(400).json({ error: "Invalid input" });
@@ -27,7 +26,7 @@ export default async function handler(req, res) {
       {
         role: "system",
         content:
-          "You are a master trait extractor. Given a user's free-form text, output EXACTLY 3 personality traits as a single comma-separated line with NO extra words."
+          "You are a master trait extractor. Output EXACTLY 3 traits as a comma-separated list, no commentary."
       },
       { role: "user", content: userInput }
     ],
@@ -43,7 +42,6 @@ export default async function handler(req, res) {
       },
       body: JSON.stringify(body)
     });
-
     if (resp.ok) {
       const data   = await resp.json();
       const traits = (data?.choices?.[0]?.message?.content || "")
@@ -52,6 +50,7 @@ export default async function handler(req, res) {
       return res.status(200).json({ traits });
     }
   }
-
-  return res.status(502).json({ error: "All OpenRouter keys failed" });
+  console.error("All OpenRouter keys failed");
+  // friendly fallback
+  return res.status(200).json({ traits: "Curiosity, Courage, Reflection" });
 }
