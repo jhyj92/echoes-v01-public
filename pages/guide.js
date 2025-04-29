@@ -8,19 +8,20 @@ import { useRouter } from "next/router";
 import assignGuide from "@/utils/assignGuide";
 import { scripts } from "@/utils/conversationScript";
 import { addCodex } from "@/utils/codexManager";
+import { saveSession, loadSession } from "@/utils/sessionManager";
 
 export default function GuidePage() {
   const router = useRouter();
-
-  // conversation stages
   const STAGES = ["intro", "choices", "follow", "ai", "prompt", "complete"];
-  const [stage, setStage] = useState(STAGES[0]);
+
+  // Load persisted state or start at intro
+  const [stage, setStage]       = useState(loadSession("stage", "intro"));
+  const [aiLine, setAI]         = useState(loadSession("aiLine", ""));
+  const [userWord, setUserWord] = useState(loadSession("userWord", ""));
 
   const [guide, setGuide] = useState(null);
-  const [aiLine, setAI] = useState("");
-  const [userWord, setUserWord] = useState("");
 
-  // Load user traits and assign guide
+  // Assign guide once
   useEffect(() => {
     const traits = JSON.parse(localStorage.getItem("echoes_traits") || "[]");
     if (!traits.length) {
@@ -33,7 +34,13 @@ export default function GuidePage() {
   if (!guide) return null;
   const script = scripts[guide.id] || scripts.dreamweaver;
 
-  // Trigger AI reflection
+  // Persist stage changes
+  function goTo(next) {
+    setStage(next);
+    saveSession("stage", next);
+  }
+
+  // Trigger AI reflection with persistence
   async function triggerAIReflect() {
     const traits = JSON.parse(localStorage.getItem("echoes_traits") || "[]").join(", ");
     const prompt = `User dominant traits: ${traits}. Write one poetic line reflecting their essence.`;
@@ -45,20 +52,23 @@ export default function GuidePage() {
       });
       const { traits: line } = await res.json();
       setAI(line);
+      saveSession("aiLine", line);
       addCodex({ content: line });
     } catch {
       const fallback = "The echoes are quiet right now. Try again later.";
       setAI(fallback);
+      saveSession("aiLine", fallback);
       addCodex({ content: fallback });
     }
-    setStage("ai");
+    goTo("ai");
   }
 
-  // Handle final user word
+  // Handle final user word with persistence
   function submitUserWord() {
     if (!userWord.trim()) return;
     addCodex({ content: userWord.trim() });
-    setStage("complete");
+    saveSession("userWord", userWord.trim());
+    goTo("complete");
   }
 
   return (
@@ -68,7 +78,7 @@ export default function GuidePage() {
       {stage === "intro" && (
         <>
           <p>{script.intro[0]}</p>
-          <button className="button-poetic" onClick={() => setStage("choices")}>
+          <button className="button-poetic" onClick={() => goTo("choices")}>
             Respond
           </button>
         </>
@@ -80,7 +90,7 @@ export default function GuidePage() {
             <button
               key={idx}
               className="button-poetic"
-              onClick={() => setStage("follow")}
+              onClick={() => goTo("follow")}
             >
               {choice}
             </button>
