@@ -1,7 +1,10 @@
 // pages/_app.js
-import "../styles/themes.css";          // ⬅️  add (or move) the global theme
-import "../style.css";           // ⬅️  keep your base styles
+"use client";
 
+import "../styles/themes.css";   // <-- only global import lives here
+import "../styles/style.css";    // (optional base styles)
+
+/** Keep _app.js minimal: just pass page props */
 export default function App({ Component, pageProps }) {
   return <Component {...pageProps} />;
 }
