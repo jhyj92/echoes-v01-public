@@ -1,17 +1,44 @@
+// pages/world.js
+
 "use client";
-import { useEffect,useState } from "react";
+
+import { useEffect, useState, useRef } from "react";
 import { useRouter } from "next/router";
 import WorldReveal from "@/components/WorldReveal";
+import { randomWhisper } from "@/utils/whispers";
 
-export default function WorldPage(){
-  const [world,setWorld]=useState(null); const router=useRouter();
-  useEffect(()=>{setWorld(JSON.parse(localStorage.getItem("echoes_world")||"null"));},[]);
-  if(!world)return null;
+export default function WorldPage() {
+  const router = useRouter();
+  const [world, setWorld]     = useState(null);
+  const [whisper, setWhisper] = useState("");
+  const timerRef              = useRef(null);
 
-  return(
-    <main style={{textAlign:"center",paddingTop:"30vh"}} className="fade">
-      <WorldReveal world={world}/>
-      <button className="button-poetic" style={{marginTop:"40px"}} onClick={()=>router.push("/guide")}>
+  useEffect(() => {
+    const stored = JSON.parse(localStorage.getItem("echoes_world") || "null");
+    if (!stored) {
+      router.replace("/");
+      return;
+    }
+    setWorld(stored);
+    timerRef.current = setTimeout(() => {
+      setWhisper(randomWhisper());
+    }, 8000);
+    return () => clearTimeout(timerRef.current);
+  }, []);
+
+  if (!world) return null;
+
+  return (
+    <main className={`${world.theme} fade`} style={{ textAlign: "center", paddingTop: "30vh" }}>
+      <WorldReveal world={world} />
+      {whisper && (
+        <p style={{ marginTop: "30px", opacity: .7 }}>{whisper}</p>
+      )}
+      <button
+        className="button-poetic"
+        style={{ marginTop: "40px" }}
+        onClick={() => router.push("/guide")}
+      >
         Continue
       </button>
     </main>
