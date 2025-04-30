@@ -1,4 +1,3 @@
-// pages/index.js
 "use client";
 
 import { useRouter } from "next/router";
