@@ -1,11 +1,7 @@
 // components/LatencyOverlay.js
-export default function LatencyOverlay({ text }) {
+export default function LatencyOverlay({ text = "The echoes are thinking…" }) {
   return (
-    <div style={{
-      position:"fixed", inset:0, background:"rgba(0,0,0,0.8)", zIndex:1000,
-      display:"flex", alignItems:"center", justifyContent:"center", color:"#C8AE7D",
-      fontSize:"1.4rem", padding:"1rem", textAlign:"center"
-    }}>
+    <div className="fixed inset-0 z-[1000] flex items-center justify-center bg-black/80 text-gold text-xl px-4 text-center">
       {text}
     </div>
   );
