@@ -1,16 +1,45 @@
 /* styles/globals.css */
 
-.button-poetic {
-  min-height: 44px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ------- brand colors ------- */
+:root {
+  --clr-gold: #c8ae7d;
+  --hue-shift: 0deg;        /* interviewer gradually sets this */
+}
+body {
+  @apply bg-[#0a0b0d] text-[var(--clr-gold)];
+  filter: hue-rotate(var(--hue-shift));
 }
 
-/* Mobile stack */
-@media(max-width: 375px) {
-  .button-poetic {
-    width:100%;
-    margin-bottom:1rem;
-  }
+/* ------- buttons ------- */
+.button-poetic,
+.btn-primary,
+.btn-outline {
+  @apply inline-flex items-center justify-center rounded-full px-8 py-3 min-h-[44px] border transition-colors duration-300;
+  border-color: var(--clr-gold);
+  font-size: 1.05rem;
+}
+.btn-primary {
+  @apply text-[var(--clr-gold)] hover:bg-[var(--clr-gold)/10];
+}
+.btn-outline {
+  @apply text-[var(--clr-gold)/70] hover:text-[var(--clr-gold)];
+}
+
+/* ------- fades ------- */
+.fade           { animation: fade .5s ease both; }
+.fade-in        { animation: fade .6s ease var(--delay,0s) both; }
+
+@keyframes fade { from { opacity:0; transform:translateY(8px);} to {opacity:1; transform:none;} }
+
+/* ------- starfield animation (used by Starfield.tsx) ------- */
+@keyframes star {
+  0%   { background-position: 0 0; }
+  100% { background-position: 1000px 1000px; }
+}
+.animate-starfield {
+  animation: star 60s linear infinite;
 }
