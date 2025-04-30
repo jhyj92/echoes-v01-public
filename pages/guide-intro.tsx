@@ -1,3 +1,4 @@
+// pages/guide-intro.tsx
 "use client";
 
 import { useRouter } from "next/router";
@@ -10,14 +11,18 @@ export default function GuideIntroPage() {
 
   useEffect(() => {
     const d = localStorage.getItem("echoes_domain");
-    if (!d) router.replace("/domains");
-    else setDomain(d);
+    if (!d) {
+      router.replace("/domains");
+    } else {
+      setDomain(d);
+    }
   }, [router]);
 
-  const pickScenario = (s: string) => {
+  function pickScenario(s: string) {
     localStorage.setItem("echoes_scenario", s);
-    router.push("/hero-chat");
-  };
+    // → route to the Guide conversation page
+    router.push("/guide");
+  }
 
   if (!domain) return null;
   return <GuideIntro domain={domain} onPick={pickScenario} />;
