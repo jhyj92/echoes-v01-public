@@ -1,17 +1,17 @@
 /* styles/starfield.css */
 
-/* Animated starfield background */
+/* Animated starfield */
 @keyframes twinkle {
-  0%, 100% { opacity: .9; }
+  0%,100% { opacity: .9; }
   50%      { opacity: .4; }
 }
 
-/* Base reset & serif poetic font */
+/* Base styling */
 html, body {
   margin: 0;
   height: 100%;
   background: var(--bg-accent, #0B0D11);
-  color:      var(--clr-primary, #E6DCC8);
+  color: var(--clr-primary, #E6DCC8);
   font-family: "EB Garamond", serif;
 }
 
@@ -24,7 +24,7 @@ html, body {
   animation: twinkle 8s infinite alternate;
 }
 
-/* World‐specific palettes */
+/* World palettes */
 :root {
   --clr-primary: #C8AE7D;
   --bg-accent:   #0B0D11;
@@ -34,22 +34,22 @@ html, body {
 .theme-emberwake  { --clr-primary: #FF9955; --bg-accent: #150A04; }
 .theme-echoFields { --clr-primary: #E6DCC8; --bg-accent: #0B0D11; }
 
-/* Global button‐poetic uses primary color */
+/* Poetic button */
 .button-poetic {
-  padding:        12px 28px;
-  border:         1px solid var(--clr-primary);
-  color:          var(--clr-primary);
-  background:     transparent;
-  font-size:      1.2rem;
-  cursor:         pointer;
-  transition:     background .4s ease, color .4s ease;
+  padding: 12px 28px;
+  border: 1px solid var(--clr-primary);
+  color: var(--clr-primary);
+  background: transparent;
+  font-size: 1.2rem;
+  cursor: pointer;
+  transition: background .4s ease, color .4s ease;
 }
 .button-poetic:hover {
   background: var(--clr-primary)20;
-  color:      #FFF;
+  color: #FFF;
 }
 
-/* Fade‐in helper */
+/* Fade-in helper */
 .fade {
   animation: fade-in 1s ease both;
 }
