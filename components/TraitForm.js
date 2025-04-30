@@ -1,48 +1,43 @@
 // components/TraitForm.js
-
 "use client";
 
 import { useState } from "react";
 import styles from "./TraitForm.module.css";
 
 export default function TraitForm({ onSubmit }) {
-  const [input,  setInput ] = useState("");
-  const [loading,setLoad ] = useState(false);
-  const [error,  setErr   ] = useState("");
+  const [input, setInput] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
 
   async function discover() {
     if (!input.trim()) {
-      setErr("Please write something to discover your echoes.");
+      setError("Please write something to discover your echoes.");
       return;
     }
-    setLoad(true);
-    setErr("");
+    setLoading(true);
+    setError("");
+
     try {
       const res = await fetch("/api/extractTraits", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ userInput: input })
+        body: JSON.stringify({ userInput: input.trim() }),
       });
-
-      if (!res.ok) {
-        throw new Error(`Server responded ${res.status}`);
-      }
-
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const { traits } = await res.json();
       const list = traits.split(",").map((t) => t.trim());
 
-      if (list.length !== 3 || list.some((t) => t.length === 0)) {
+      if (list.length !== 3 || list.some((t) => !t)) {
         throw new Error("Invalid traits format");
       }
-
       onSubmit(list);
     } catch (e) {
       console.error("TraitForm error:", e);
-      setErr(
-        "The echoes are quiet right now. Check your connection or try again."
+      setError(
+        "The echoes are quiet right now. Please check your connection or try again."
       );
     } finally {
-      setLoad(false);
+      setLoading(false);
     }
   }
 
@@ -67,11 +62,7 @@ export default function TraitForm({ onSubmit }) {
         {loading ? "Listening…" : "Discover"}
       </button>
 
-      {error && (
-        <p style={{ color: "#F66", marginTop: "12px" }}>
-          {error}
-        </p>
-      )}
+      {error && <p className={styles.error}>{error}</p>}
     </div>
   );
 }
