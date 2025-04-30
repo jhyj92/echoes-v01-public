@@ -4,7 +4,7 @@
   margin: 30vh auto 0;
   text-align: center;
 }
-.headline {
+.title {
   font-size: 1.8rem;
   margin-bottom: 0.3rem;
 }
@@ -21,7 +21,6 @@
   border-radius: 6px;
   color: inherit;
 }
-.addBtn,
 .discoverBtn {
   margin-top: 0.6rem;
   padding: 8px 16px;
@@ -30,19 +29,9 @@
   border-radius: 6px;
   cursor: pointer;
 }
-.listBlock {
-  margin-top: 1rem;
-}
-.list {
-  list-style: none;
-  padding: 0;
-  margin-bottom: 0.8rem;
-}
-.list li {
-  display: inline-block;
-  margin: 0 4px 4px 0;
-  background: #2b2b31;
-  padding: 4px 8px;
-  border-radius: 4px;
-  font-size: 0.85rem;
+/* Error text styling */
+.error {
+  color: #f66;
+  margin-top: 12px;
+  font-size: 0.9rem;
 }
