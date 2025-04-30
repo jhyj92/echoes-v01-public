@@ -18,8 +18,10 @@ export default function Landing() {
   return (
     <main className="relative flex flex-col items-center justify-center min-h-screen text-center">
       <Starfield />
-      <h1 className="text-[4rem] font-serif fade">Echoes</h1>
-      <p className="fade mt-4 mb-12 max-w-xs">
+
+      <h1 className="text-[4rem] font-serif fade text-gold">Echoes</h1>
+
+      <p className="fade mt-4 mb-12 max-w-xs text-gold/90">
         Your soul remembers. <br />Step through the Echoes.
       </p>
 
