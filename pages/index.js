@@ -1,5 +1,7 @@
 // File: pages/index.js
 
+"use client";                 // ← ensure this is a client component
+
 import { useEffect } from "react";
 import { useRouter } from "next/router";
 import useHydratedState from "@/hooks/useHydratedState";
