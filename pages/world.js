@@ -1,8 +1,8 @@
-// pages/world.js
+// File: pages/world.js
 
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/router";
 import useHydratedState from "@/hooks/useHydratedState";
 import WorldReveal from "@/components/WorldReveal";
@@ -12,6 +12,7 @@ import FadeIn from "@/components/FadeIn";
 export default function WorldPage() {
   const router = useRouter();
   const world  = useHydratedState("echoes_world", null);
+  const [whisper, setWhisper] = useState("");
   const timerRef = useRef(null);
 
   useEffect(() => {
@@ -20,7 +21,7 @@ export default function WorldPage() {
       return;
     }
     timerRef.current = setTimeout(() => {
-      // whisper logic unchanged
+      setWhisper(randomWhisper());
     }, 8000);
     return () => clearTimeout(timerRef.current);
   }, [world, router]);
@@ -32,7 +33,16 @@ export default function WorldPage() {
       <FadeIn delay={0}>
         <WorldReveal world={world} />
       </FadeIn>
-      {/* Whisper and Continue button as before */}
+
+      {whisper && (
+        <FadeIn delay={0.5}>
+          <p style={{ marginTop: "30px", opacity: 0.7, fontStyle: "italic" }}>{whisper}</p>
+        </FadeIn>
+      )}
+
+      <FadeIn delay={1}>
+        <button className="button-poetic" style={{ marginTop: "40px" }} onClick={() => router.push("/guide")}>Continue</button>
+      </FadeIn>
     </main>
   );
 }
