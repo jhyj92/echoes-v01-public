@@ -1,6 +1,6 @@
 // File: pages/index.js
 
-"use client";                 // ← ensure this is a client component
+"use client";
 
 import { useEffect } from "react";
 import { useRouter } from "next/router";
@@ -11,7 +11,7 @@ export default function Landing() {
   const world  = useHydratedState("echoes_world", null);
   const traits = useHydratedState("echoes_traits", []);
 
-  // Returning users skip to guide
+  // Returning users skip directly to the guide
   useEffect(() => {
     if (world && traits.length) {
       router.replace("/guide");
@@ -29,10 +29,12 @@ export default function Landing() {
       <p style={{ margin: "16px 0 40px", color: "var(--clr-primary)" }}>
         Your soul remembers. Step through the Echoes.
       </p>
+
+      {/* ⬇️  Advance to the next phase of the flow */}
       <button
         className="button-poetic"
         style={{ fontSize: "1.2rem", padding: "12px 28px" }}
-        onClick={() => router.push("/onboarding")}
+        onClick={() => router.push("/domains")}
       >
         Get Started
       </button>
