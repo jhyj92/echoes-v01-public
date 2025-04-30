@@ -9,13 +9,11 @@ module.exports = {
       colors: { gold: "#c8ae7d" },
       keyframes: {
         star: {
-          "0%":   { backgroundPosition: "0 0" },
+          "0%": { backgroundPosition: "0 0" },
           "100%": { backgroundPosition: "1000px 1000px" },
         },
       },
-      animation: {
-        starfield: "star 60s linear infinite",
-      },
+      animation: { starfield: "star 60s linear infinite" },
     },
   },
   plugins: [],
