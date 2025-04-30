@@ -1,13 +1,6 @@
 // pages/_app.js
+import "@/styles/globals.css";
 
-import "../styles/starfield.css";
-
-export default function App({ Component, pageProps }) {
-  // Wrap in starfield and allow theme class on <main>
-  return (
-    <>
-      <div className="starfield" />
-      <Component {...pageProps} />
-    </>
-  );
+export default function EchoesApp({ Component, pageProps }) {
+  return <Component {...pageProps} />;
 }
