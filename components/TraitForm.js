@@ -11,7 +11,10 @@ export default function TraitForm({ onSubmit }) {
   const [error,  setErr   ] = useState("");
 
   async function discover() {
-    if (!input.trim()) return;
+    if (!input.trim()) {
+      setErr("Please write something to discover your echoes.");
+      return;
+    }
     setLoad(true);
     setErr("");
     try {
@@ -20,11 +23,24 @@ export default function TraitForm({ onSubmit }) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ userInput: input })
       });
+
+      if (!res.ok) {
+        throw new Error(`Server responded ${res.status}`);
+      }
+
       const { traits } = await res.json();
       const list = traits.split(",").map((t) => t.trim());
+
+      if (list.length !== 3 || list.some((t) => t.length === 0)) {
+        throw new Error("Invalid traits format");
+      }
+
       onSubmit(list);
     } catch (e) {
-      setErr("The echoes are quiet right now. Try again in a moment.");
+      console.error("TraitForm error:", e);
+      setErr(
+        "The echoes are quiet right now. Check your connection or try again."
+      );
     } finally {
       setLoad(false);
     }
@@ -48,7 +64,7 @@ export default function TraitForm({ onSubmit }) {
         className={styles.discoverBtn}
         disabled={loading}
       >
-        {loading ? "Discovering…" : "Discover"}
+        {loading ? "Listening…" : "Discover"}
       </button>
 
       {error && (
