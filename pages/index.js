@@ -1,7 +1,6 @@
 // File: pages/index.js
 
 import { useEffect } from "react";
-import Link from "next/link";
 import { useRouter } from "next/router";
 import useHydratedState from "@/hooks/useHydratedState";
 
@@ -28,9 +27,13 @@ export default function Landing() {
       <p style={{ margin: "16px 0 40px", color: "var(--clr-primary)" }}>
         Your soul remembers. Step through the Echoes.
       </p>
-      <Link href="/onboarding" legacyBehavior>
-        <a className="button-poetic">Get Started</a>
-      </Link>
+      <button
+        className="button-poetic"
+        style={{ fontSize: "1.2rem", padding: "12px 28px" }}
+        onClick={() => router.push("/onboarding")}
+      >
+        Get Started
+      </button>
     </main>
   );
 }
