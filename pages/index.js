@@ -2,43 +2,30 @@
 
 "use client";
 
-import { useState, useEffect } from "react";
 import { useRouter } from "next/router";
-import { TAGLINES } from "@/data/landingTaglines";
+import useHydratedState from "@/hooks/useHydratedState";
 
 export default function Landing() {
   const router = useRouter();
-  const [tagline, setTagline] = useState("");
+  // Hydrate world and traits safely
+  const world  = useHydratedState("echoes_world", null);
+  const traits = useHydratedState("echoes_traits", []);
 
-  useEffect(() => {
-    // pick one tagline at random on each load
-    const pick = TAGLINES[Math.floor(Math.random() * TAGLINES.length)];
-    setTagline(pick);
-  }, []);
+  // Returning users skip to guide
+  if (world && traits.length) {
+    router.replace("/guide");
+    return null;
+  }
 
   return (
-    <main
-      className="fade"
-      style={{
-        display: "flex",
-        flexDirection: "column",
-        height: "100vh",
-        justifyContent: "center",
-        alignItems: "center",
-        textAlign: "center",
-        padding: "0 20px",
-      }}
-    >
+    <main className="fade" style={{ textAlign: "center", padding: "10vh 20px" }}>
       <h1 style={{ fontSize: "4rem", margin: 0, color: "var(--clr-primary)" }}>
         Echoes
       </h1>
       <p style={{ margin: "16px 0 40px", color: "var(--clr-primary)" }}>
-        {tagline}
+        Your soul remembers. Step through the Echoes.
       </p>
-      <button
-        className="button-poetic"
-        onClick={() => router.push("/onboarding")}
-      >
+      <button className="button-poetic" onClick={() => router.push("/onboarding")}>
         Get Started
       </button>
     </main>
