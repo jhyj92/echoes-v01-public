@@ -1,3 +1,4 @@
+// pages/domains.js
 "use client";
 
 import { useRouter } from "next/router";
@@ -17,12 +18,13 @@ export default function DomainsPage() {
     }
   }, [router]);
 
-  if (answers === null) return null; // loading
+  if (answers === null) return null; // still loading
 
-  function pick(d: string) {
+  function pickDomain(d: string) {
     localStorage.setItem("echoes_domain", d);
-    router.push("/guide-intro");
+    // → correctly advance to world reveal
+    router.push("/world");
   }
 
-  return <DomainSelector answers={answers} onSelect={pick} />;
+  return <DomainSelector answers={answers} onSelect={pickDomain} />;
 }
