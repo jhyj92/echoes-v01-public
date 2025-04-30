@@ -1,6 +1,6 @@
 // data/worlds.js
 
-// v0.3 World definitions with precise weight & soft keywords
+// v0.3 spec worlds with correct IDs, theme classes, and keyword weights
 export const WORLDS = [
   {
     id: "dreamSea",
@@ -10,24 +10,24 @@ export const WORLDS = [
     softKeywords:   ["empathy", "curiosity", "wonder"],
   },
   {
-    id: "crystalLab",
-    name: "Crystalline Labyrinth",
-    theme: "theme-crystalLab",
-    weightKeywords: ["analysis", "logic", "precision"],
-    softKeywords:   ["strategy", "planning", "focus"],
-  },
-  {
     id: "emberwake",
-    name: "Emberwake Highlands",
+    name: "Emberwake Citadel",
     theme: "theme-emberwake",
     weightKeywords: ["courage", "leadership", "passion"],
     softKeywords:   ["resilience", "bravery", "drive"],
   },
   {
-    id: "echoFields",
-    name: "Shifting Echo Fields",
-    theme: "theme-echoFields",
-    weightKeywords: ["adaptability", "curiosity", "exploration"],
-    softKeywords:   ["flexibility", "openness", "innovation"],
-  }
+    id: "stormlight",
+    name: "Stormlight Vale",
+    theme: "theme-stormlight",
+    weightKeywords: ["strategy", "power", "adaptability"],
+    softKeywords:   ["focus", "insight", "discipline"],
+  },
+  {
+    id: "whispergrove",
+    name: "Whispergrove Hollow",
+    theme: "theme-whispergrove",
+    weightKeywords: ["intuition", "empathy", "growth"],
+    softKeywords:   ["calm", "reflection", "nurture"],
+  },
 ];
