@@ -1,5 +1,4 @@
-// File: pages/index.js
-
+// pages/index.js
 "use client";
 
 import { useEffect } from "react";
@@ -11,7 +10,7 @@ export default function Landing() {
   const world  = useHydratedState("echoes_world", null);
   const traits = useHydratedState("echoes_traits", []);
 
-  // Returning users skip directly to the guide
+  // Returning visitors jump straight to guide
   useEffect(() => {
     if (world && traits.length) {
       router.replace("/guide");
@@ -19,22 +18,18 @@ export default function Landing() {
   }, [world, traits, router]);
 
   return (
-    <main
-      className="fade"
-      style={{ textAlign: "center", padding: "10vh 20px" }}
-    >
-      <h1 style={{ fontSize: "4rem", margin: 0, color: "var(--clr-primary)" }}>
+    <main className="fade" style={{ textAlign: "center", padding: "10vh 20px" }}>
+      <h1 style={{ fontSize: "4rem", color: "var(--clr-primary)", margin: 0 }}>
         Echoes
       </h1>
       <p style={{ margin: "16px 0 40px", color: "var(--clr-primary)" }}>
         Your soul remembers. Step through the Echoes.
       </p>
-
-      {/* ⬇️  Advance to the next phase of the flow */}
+      {/* ↪ go to interviewer */}
       <button
         className="button-poetic"
         style={{ fontSize: "1.2rem", padding: "12px 28px" }}
-        onClick={() => router.push("/domains")}
+        onClick={() => router.push("/onboarding")}
       >
         Get Started
       </button>
