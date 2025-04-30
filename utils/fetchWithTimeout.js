@@ -1,7 +1,13 @@
 // utils/fetchWithTimeout.js
-export default function fetchWithTimeout(url, options={}, ms=8000) {
-  return Promise.race([
-    fetch(url, options),
-    new Promise((_, rej) => setTimeout(()=>rej(new Error("timeout")), ms))
-  ]);
+
+export default async function fetchWithTimeout(url, options = {}, ms = 8000) {
+  const controller = new AbortController();
+  const id = setTimeout(() => controller.abort(), ms);
+
+  try {
+    const response = await fetch(url, { ...options, signal: controller.signal });
+    return response;
+  } finally {
+    clearTimeout(id);
+  }
 }
