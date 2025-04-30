@@ -139,15 +139,15 @@ export default function GuidePage() {
       )}
 
       {stage === "complete" && (
-        <>
-          <p style={{ marginTop: "24px" }}>
-            Thank you. Your echo has been recorded in your Codex.
-          </p>
-          <button className="button-poetic" onClick={() => router.push("/codex")}>
-            View My Codex
-          </button>
-        </>
-      )}
-    </main>
-  );
-}
+  <>
+    <p style={{ marginTop: "24px" }}>
+      Thank you. Your echo has been recorded in your Codex.
+    </p>
+    <button
+      className="button-poetic"
+      onClick={() => router.push("/codex")}
+    >
+      View My Codex
+    </button>
+  </>
+)}
