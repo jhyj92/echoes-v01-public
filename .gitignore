@@ -1,2 +1,16 @@
-# Example template (no secrets)
-OPENROUTER_KEYS=your_api_key_here
+```gitignore
+# Ignore all environment variable files
+.env*
+!.env.example
+
+# Node modules and build outputs
+node_modules/
+.next/
+dist/
+.vscode/
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+```
