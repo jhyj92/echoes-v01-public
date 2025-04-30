@@ -1,4 +1,3 @@
-// pages/domains.js
 "use client";
 
 import { useRouter } from "next/router";
@@ -7,26 +6,23 @@ import DomainSelector from "@/components/DomainSelector";
 
 export default function DomainsPage() {
   const router = useRouter();
-  const [answers, setAnswers] = useState(null);     // null = loading
+  const [answers, setAnswers] = useState<string[] | null>(null);
 
-  // hydrate answers from localStorage
   useEffect(() => {
     const stored = JSON.parse(localStorage.getItem("echoes_answers") || "[]");
     if (stored.length === 0) {
-      // user skipped interviewer – send them back
       router.replace("/onboarding");
     } else {
       setAnswers(stored);
     }
   }, [router]);
 
-  // still loading
-  if (answers === null) return null;
+  if (answers === null) return null; // loading
 
-  function pickDomain(domain) {
-    localStorage.setItem("echoes_domain", domain);
+  function pick(d: string) {
+    localStorage.setItem("echoes_domain", d);
     router.push("/guide-intro");
   }
 
-  return <DomainSelector answers={answers} onSelect={pickDomain} />;
+  return <DomainSelector answers={answers} onSelect={pick} />;
 }
