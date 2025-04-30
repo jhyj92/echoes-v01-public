@@ -1,0 +1,16 @@
+/* styles/globals.css */
+
+.button-poetic {
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Mobile stack */
+@media(max-width: 375px) {
+  .button-poetic {
+    width:100%;
+    margin-bottom:1rem;
+  }
+}
