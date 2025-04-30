@@ -3,71 +3,105 @@
 import dotenv from "dotenv";
 dotenv.config();
 
-// Load comma-separated keys or single key
-const OPENROUTER_KEYS = (process.env.OPENROUTER_KEYS || process.env.OPENROUTER_KEY_1 || "").split(",").map(k => k.trim());
-let keyIndex = 0;
+const OR_KEYS = (process.env.OPENROUTER_KEYS || process.env.OPENROUTER_KEY_1 || "")
+  .split(",")
+  .map((k) => k.trim())
+  .filter(Boolean);
 
-function nextKey() {
-  const key = OPENROUTER_KEYS[keyIndex % OPENROUTER_KEYS.length];
-  keyIndex += 1;
-  return key;
+const GM_KEYS = (process.env.GEMINI_KEYS || "")
+  .split(",")
+  .map((k) => k.trim())
+  .filter(Boolean);
+
+let orIndex = 0, gmIndex = 0;
+const nextOrKey = () => OR_KEYS[orIndex++ % OR_KEYS.length];
+const nextGmKey = () => GM_KEYS[gmIndex++ % GM_KEYS.length];
+
+async function fetchWithTimeout(url, opts = {}, ms = 10000) {
+  const controller = new AbortController();
+  const id = setTimeout(() => controller.abort(), ms);
+  try {
+    return await fetch(url, { ...opts, signal: controller.signal });
+  } finally {
+    clearTimeout(id);
+  }
 }
 
 export default async function handler(req, res) {
   if (req.method !== "POST") {
     return res.status(405).json({ error: "Method Not Allowed" });
   }
-
   const { userInput } = req.body || {};
   if (!userInput || typeof userInput !== "string") {
     return res.status(400).json({ error: "Invalid input" });
   }
 
-  const body = {
+  const payload = {
     model: "deepseek/deepseek-chat-v3-0324:free",
     messages: [
       {
         role: "system",
         content:
-          "You are a master trait extractor. Output EXACTLY 3 traits as a comma-separated list, no commentary."
+          "You are a master trait extractor. Output EXACTLY 3 traits as a comma-separated list, no commentary.",
       },
-      { role: "user", content: userInput }
+      { role: "user", content: userInput },
     ],
-    temperature: 0.2
+    temperature: 0.2,
   };
 
-  // Try each API key once
-  for (let i = 0; i < OPENROUTER_KEYS.length; i++) {
+  // 1) Try DeepSeek (OpenRouter) keys
+  for (let i = 0; i < OR_KEYS.length; i++) {
     try {
-      const resp = await fetch("https://openrouter.ai/api/v1/chat/completions", {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${nextKey()}`,
-          "Content-Type": "application/json"
+      const resp = await fetchWithTimeout(
+        "https://openrouter.ai/api/v1/chat/completions",
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${nextOrKey()}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(payload),
         },
-        body: JSON.stringify(body)
-      });
-
-      if (!resp.ok) {
-        // Log and continue to next key
-        console.warn(`OpenRouter key failed (${resp.status}). Trying next key.`);
-        continue;
-      }
-
-      const data   = await resp.json();
-      const traits = (data?.choices?.[0]?.message?.content || "")
+        10000
+      );
+      if (!resp.ok) continue;
+      const data = await resp.json();
+      const traits = (data.choices?.[0]?.message?.content || "")
         .replace(/\n+/g, "")
         .trim();
-
       return res.status(200).json({ traits });
-    } catch (err) {
-      console.error("Fetch error:", err);
-      // continue to next key
+    } catch {
+      // try next key
     }
   }
 
-  // Fallback if all keys fail
-  const fallback = "curiosity, courage, reflection";
-  console.error("All OpenRouter keys exhausted or failed. Returning fallback traits.");
-  return res.status(200).json({ traits: fallback });
+  // 2) Fallback to Gemini Flash
+  for (let j = 0; j < GM_KEYS.length; j++) {
+    try {
+      const resp = await fetchWithTimeout(
+        `https://generativelanguage.googleapis.com/v1/models/chat-bison-001:generateMessage?key=${nextGmKey()}`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            prompt: { text: userInput },
+            temperature: 0.2,
+          }),
+        },
+        8000
+      );
+      if (!resp.ok) continue;
+      const data = await resp.json();
+      const traits = (data.candidates?.[0]?.content || "")
+        .replace(/\n+/g, "")
+        .trim();
+      return res.status(200).json({ traits });
+    } catch {
+      // try next Gemini key
+    }
+  }
+
+  // 3) Ultimate fallback
+  console.error("All extraction keys failed; returning default traits.");
+  return res.status(200).json({ traits: "curiosity, courage, reflection" });
 }
