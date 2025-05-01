@@ -1,27 +1,20 @@
 // pages/api/guideIntro.js
-
 import dotenv from "dotenv";
 dotenv.config();
 
-const OR_KEYS = (process.env.OPENROUTER_KEYS || "")
-  .split(",")
-  .map((k) => k.trim())
-  .filter(Boolean);
+const OR_KEYS = (process.env.OPENROUTER_KEYS || "").split(",").map((k) => k.trim()).filter(Boolean);
+const GM_KEYS = (process.env.GEMINI_KEYS || "").split(",").map((k) => k.trim()).filter(Boolean);
 
-const GM_KEYS = (process.env.GEMINI_KEYS || "")
-  .split(",")
-  .map((k) => k.trim())
-  .filter(Boolean);
-
-let orIndex = 0, gmIndex = 0;
+let orIndex = 0;
+let gmIndex = 0;
 const nextOrKey = () => OR_KEYS[orIndex++ % OR_KEYS.length];
 const nextGmKey = () => GM_KEYS[gmIndex++ % GM_KEYS.length];
 
-async function fetchWithTimeout(url, opts = {}, ms = 10000) {
-  const controller = new AbortController();
-  const id = setTimeout(() => controller.abort(), ms);
+async function fetchWithTimeout(url, opts = {}, ms = 10_000) {
+  const ctrl = new AbortController();
+  const id = setTimeout(() => ctrl.abort(), ms);
   try {
-    return await fetch(url, { ...opts, signal: controller.signal });
+    return await fetch(url, { ...opts, signal: ctrl.signal });
   } finally {
     clearTimeout(id);
   }
@@ -29,6 +22,7 @@ async function fetchWithTimeout(url, opts = {}, ms = 10000) {
 
 export default async function handler(req, res) {
   if (req.method !== "POST") {
+    res.setHeader("Allow", ["POST"]);
     return res.status(405).json({ error: "Method Not Allowed" });
   }
   const { domain, prompt } = req.body || {};
@@ -36,20 +30,12 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: "Missing domain or prompt" });
   }
 
-  const instruction = `Domain "${domain}". ${prompt}`;
-  const orPayload = {
-    model: "deepseek/deepseek-chat-v3-0324:free",
-    messages: [
-      { role: "system", content: "You are a poetic narrative generator." },
-      { role: "user", content: instruction },
-    ],
-    temperature: 0.7,
-  };
+  const instruction = `World: ${domain}\n${prompt}`;
 
-  // 1) OpenRouter (DeepSeek)
+  // 1) OpenRouter
   for (let i = 0; i < OR_KEYS.length; i++) {
     try {
-      const r = await fetchWithTimeout(
+      const resp = await fetchWithTimeout(
         "https://openrouter.ai/api/v1/chat/completions",
         {
           method: "POST",
@@ -57,27 +43,34 @@ export default async function handler(req, res) {
             Authorization: `Bearer ${nextOrKey()}`,
             "Content-Type": "application/json",
           },
-          body: JSON.stringify(orPayload),
+          body: JSON.stringify({
+            model: "deepseek-chat-v3-0324:free",
+            messages: [
+              { role: "system", content: "You are a narrative guide creator." },
+              { role: "user", content: instruction },
+            ],
+            temperature: 0.7,
+          }),
         },
-        10000
+        10_000
       );
-      if (!r.ok) continue;
-      const { choices } = await r.json();
-      const scenarios = choices[0].message.content
+      if (!resp.ok) continue;
+      const { choices } = await resp.json();
+      const scenarios = choices[0]?.message?.content
         .split(/\r?\n/)
-        .map((l) => l.replace(/^[0-9]+\.\s*/, "").trim())
+        .map((l) => l.replace(/^[\d\.\)\-]+\s*/, "").trim())
         .filter(Boolean)
         .slice(0, 3);
       return res.status(200).json({ scenarios });
     } catch {
-      // try next OR key
+      // next OR key
     }
   }
 
-  // 2) Gemini Flash fallback
+  // 2) Fallback: Gemini Flash
   for (let j = 0; j < GM_KEYS.length; j++) {
     try {
-      const r = await fetchWithTimeout(
+      const resp = await fetchWithTimeout(
         `https://generativelanguage.googleapis.com/v1/models/chat-bison-001:generateMessage?key=${nextGmKey()}`,
         {
           method: "POST",
@@ -87,22 +80,22 @@ export default async function handler(req, res) {
             temperature: 0.7,
           }),
         },
-        8000
+        8_000
       );
-      if (!r.ok) continue;
-      const data = await r.json();
+      if (!resp.ok) continue;
+      const data = await resp.json();
       const scenarios = (data.candidates?.[0]?.content || "")
         .split(/\r?\n/)
-        .map((l) => l.replace(/^[0-9]+\.\s*/, "").trim())
+        .map((l) => l.replace(/^[\d\.\)\-]+\s*/, "").trim())
         .filter(Boolean)
         .slice(0, 3);
       return res.status(200).json({ scenarios });
     } catch {
-      // try next Gemini key
+      // next GM key
     }
   }
 
-  // 3) Ultimate fallback
+  // 3) Hard fallback
   return res.status(200).json({
     scenarios: [
       "A starlit path appears…",
