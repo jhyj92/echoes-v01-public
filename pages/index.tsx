@@ -1,15 +1,15 @@
 // pages/index.tsx
 "use client";
 
-import { useRouter }   from "next/router";
-import { useEffect }    from "react";
-import Starfield        from "@/components/Starfield";
+import { useRouter } from "next/router";
+import { useEffect, CSSProperties } from "react";
+import Starfield from "@/components/Starfield";
 import useHydratedState from "@/hooks/useHydratedState";
 
 export default function Landing() {
   const router = useRouter();
-  const world  = useHydratedState("echoes_world", null);
-  const traits = useHydratedState("echoes_traits", []);
+  const world  = useHydratedState<string | null>("echoes_world", null);
+  const traits = useHydratedState<string[]>("echoes_traits", []);
 
   useEffect(() => {
     if (world && traits.length > 0) {
@@ -29,7 +29,7 @@ export default function Landing() {
 
       <button
         className="btn-primary fade-in"
-        style={{ "--delay": "0.2s" }}
+        style={{ "--delay": "0.2s" } as CSSProperties}
         onClick={() => router.push("/onboarding")}
       >
         Start Journey
@@ -37,7 +37,7 @@ export default function Landing() {
 
       <button
         className="btn-outline fade-in mt-4"
-        style={{ "--delay": "0.4s" }}
+        style={{ "--delay": "0.4s" } as CSSProperties}
         onClick={() => router.push("/codex")}
       >
         View Codex
