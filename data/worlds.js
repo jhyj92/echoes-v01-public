@@ -1,11 +1,11 @@
 // data/worlds.js
 
-// v0.3 spec worlds with correct IDs, theme classes, and keyword weights
+// v0.3 spec worlds with consistent kebab-case IDs & theme classes
 export const WORLDS = [
   {
-    id: "dreamSea",
+    id: "dream-sea",
     name: "Dream-Sea Realm",
-    theme: "theme-dreamSea",
+    theme: "theme-dream-sea",
     weightKeywords: ["creativity", "imagination", "vision"],
     softKeywords:   ["empathy", "curiosity", "wonder"],
   },
