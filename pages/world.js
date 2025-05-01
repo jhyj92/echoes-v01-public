@@ -1,48 +1,42 @@
-// File: pages/world.js
-
+// pages/world.js
 "use client";
 
-import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/router";
-import useHydratedState from "@/hooks/useHydratedState";
+import { useEffect, useState } from "react";
 import WorldReveal from "@/components/WorldReveal";
-import { randomWhisper } from "@/utils/whispers";
-import FadeIn from "@/components/FadeIn";
 
 export default function WorldPage() {
   const router = useRouter();
-  const world  = useHydratedState("echoes_world", null);
-  const [whisper, setWhisper] = useState("");
-  const timerRef = useRef(null);
+  const [world, setWorld] = useState<string | null>(null);
 
+  // Load assigned world or redirect back to domains
   useEffect(() => {
-    if (!world) {
-      router.replace("/");
-      return;
+    const w = localStorage.getItem("echoes_domain")     // domain first
+      ? localStorage.getItem("echoes_world")            // then world
+      : null;
+    if (!w) {
+      router.replace("/domains");
+    } else {
+      setWorld(w);
     }
-    timerRef.current = setTimeout(() => {
-      setWhisper(randomWhisper());
-    }, 8000);
-    return () => clearTimeout(timerRef.current);
-  }, [world, router]);
+  }, [router]);
 
   if (!world) return null;
 
   return (
-    <main className={`${world.theme}`} style={{ textAlign: "center", paddingTop: "30vh" }}>
-      <FadeIn delay={0}>
-        <WorldReveal world={world} />
-      </FadeIn>
+    <main className="min-h-screen flex flex-col items-center justify-center px-6 py-12 text-center">
+      <WorldReveal world={world} />
 
-      {whisper && (
-        <FadeIn delay={0.5}>
-          <p style={{ marginTop: "30px", opacity: 0.7, fontStyle: "italic" }}>{whisper}</p>
-        </FadeIn>
-      )}
-
-      <FadeIn delay={1}>
-        <button className="button-poetic" style={{ marginTop: "40px" }} onClick={() => router.push("/guide")}>Continue</button>
-      </FadeIn>
+      <button
+        className="btn-primary mt-8"
+        onClick={() => {
+          // Persist and advance
+          localStorage.setItem("echoes_world", world);
+          router.push("/guide-intro");
+        }}
+      >
+        Continue
+      </button>
     </main>
   );
 }
