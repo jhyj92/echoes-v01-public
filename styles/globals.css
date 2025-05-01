@@ -2,35 +2,48 @@
 @tailwind components;
 @tailwind utilities;
 
-/* ─── Brand palette ─────────────────────────────── */
+/* ─── Brand palette ───────────────────────────────────────── */
 :root {
   --clr-gold: #c8ae7d;
-  --hue-shift: 0deg;      /* interviewer updates this */
+  --hue-shift: 0deg;      /* interviewer updates this dynamically */
 }
+
+/* Root body styling */
 body {
   @apply bg-[#0a0b0d] text-[var(--clr-gold)];
   filter: hue-rotate(var(--hue-shift));
 }
 
-/* ─── Buttons ───────────────────────────────────── */
+/* ─── Buttons ─────────────────────────────────────────────── */
 .btn-primary,
 .btn-outline,
 .button-poetic {
-  @apply inline-flex items-center justify-center rounded-full px-8 py-3 min-h-[44px] border transition-colors duration-300;
+  @apply inline-flex items-center justify-center rounded-full
+         px-8 py-3 min-h-[44px] border transition-colors duration-300;
   border-color: var(--clr-gold);
   font-size: 1.05rem;
 }
-.btn-primary { @apply text-[var(--clr-gold)] hover:bg-[var(--clr-gold)/10]; }
-.btn-outline { @apply text-[var(--clr-gold)/70] hover:text-[var(--clr-gold)]; }
-
-/* ─── Fades ─────────────────────────────────────── */
-.fade    { animation: fade .5s ease both; }
-.fade-in { animation: fade .6s ease var(--delay,0s) both; }
-@keyframes fade { from {opacity:0; transform:translateY(8px);} to {opacity:1; transform:none;} }
-
-/* ─── Starfield drift (Starfield.tsx) ───────────── */
-@keyframes star {
-  0% { background-position:0 0; }
-  100% { background-position:1000px 1000px; }
+.btn-primary {
+  @apply text-[var(--clr-gold)] hover:bg-[var(--clr-gold)/10];
 }
-.animate-starfield { animation: star 60s linear infinite; }
+.btn-outline {
+  @apply text-[var(--clr-gold)/70] hover:text-[var(--clr-gold)];
+}
+
+/* ─── Fade animations ─────────────────────────────────────── */
+.fade    { animation: fade 0.5s ease both; }
+.fade-in { animation: fade 0.6s ease var(--delay, 0s) both; }
+
+@keyframes fade {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: none; }
+}
+
+/* ─── Starfield background drift ─────────────────────────── */
+@keyframes star {
+  from { background-position: 0 0; }
+  to   { background-position: 1000px 1000px; }
+}
+.animate-starfield {
+  animation: star 60s linear infinite;
+}
