@@ -1,5 +1,9 @@
-import "@/styles/globals.css";
+// pages/_app.js
 
-export default function EchoesApp({ Component, pageProps }) {
+import "@/styles/globals.css";
+import "@/styles/themes.css";
+import "@/styles/starfield.css";
+
+export default function App({ Component, pageProps }) {
   return <Component {...pageProps} />;
 }
