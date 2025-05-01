@@ -1,4 +1,6 @@
-// pages/index.tsx
+/* ----------------------------------------------------------------
+   Landing  ▸  Starfield + centred content + responsive buttons
+-----------------------------------------------------------------*/
 "use client";
 
 import { useRouter } from "next/router";
@@ -7,41 +9,42 @@ import useHydratedState from "@/hooks/useHydratedState";
 
 export default function Landing() {
   const router = useRouter();
-
-  // ── Hydrated values (generic hook now understands the <T> syntax) ──
   const world  = useHydratedState<string | null>("echoes_world", null);
   const traits = useHydratedState<string[]>("echoes_traits", []);
 
-  // If the visitor already finished onboarding, drop them in /guide
-  if (world && traits.length) {
-    if (typeof window !== "undefined") router.replace("/guide");
-    return null;
+  /* If visitor completed onboarding, drop them into /guide immediately */
+  if (typeof window !== "undefined" && world && traits.length) {
+    router.replace("/guide");
   }
 
   return (
-    <main className="relative flex flex-col items-center justify-center min-h-screen text-center">
+    <main className="relative flex flex-col items-center justify-center min-h-screen px-4">
       <Starfield />
 
-      <h1 className="text-[4rem] font-serif fade">Echoes</h1>
-      <p className="fade mt-4 mb-12 max-w-xs">
-        Your soul remembers. <br />Step through the Echoes.
+      <h1 className="text-5xl md:text-6xl font-serif text-gold mb-4 fade">
+        Echoes
+      </h1>
+      <p className="text-center max-w-xs md:max-w-md fade mb-10">
+        Your soul remembers.
+        <br />
+        Step through the Echoes.
       </p>
 
-      <button
-        className="btn-primary fade-in"
-        style={{ ["--delay" as any]: "0.2s" }}  // <— typed workaround
-        onClick={() => router.push("/onboarding")}
-      >
-        Start Journey
-      </button>
+      <div className="flex gap-3 fade-in" style={{ "--delay": "0.2s" } as any}>
+        <button
+          className="btn-primary"
+          onClick={() => router.push("/onboarding")}
+        >
+          Start Journey
+        </button>
 
-      <button
-        className="btn-outline fade-in mt-4"
-        style={{ ["--delay" as any]: "0.4s" }}
-        onClick={() => router.push("/codex")}
-      >
-        View Codex
-      </button>
+        <button
+          className="btn-outline"
+          onClick={() => router.push("/codex")}
+        >
+          View Codex
+        </button>
+      </div>
     </main>
   );
 }
