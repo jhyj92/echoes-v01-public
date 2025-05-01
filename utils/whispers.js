@@ -13,6 +13,7 @@ export const whispers = [
 
 /**
  * Pick one whisper at random.
+ * @returns {string}
  */
 export function randomWhisper() {
   const idx = Math.floor(Math.random() * whispers.length);
