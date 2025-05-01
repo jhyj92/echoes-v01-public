@@ -1,24 +1,32 @@
-// hooks/useHydratedState.ts
-import { useEffect, useState } from "react";
+// hooks/useHydratedState.js
+import { useState, useEffect } from "react";
 
-/**
- * Persisted state that is safely hydrated on the client.
- * Generic <T> lets callers specify the shape they expect back.
- */
-export default function useHydratedState<T>(key: string, fallback: T) {
-  const [state, setState] = useState<T>(fallback);
+export default function useHydratedState(key, initialValue) {
+  // Start with initialValue on both server and first render
+  const [state, setState] = useState(initialValue);
 
-  // First paint on the client: pull from localStorage (if it exists)
+  // After mount, read from localStorage once
   useEffect(() => {
     if (typeof window === "undefined") return;
-
     try {
-      const stored = localStorage.getItem(key);
-      if (stored !== null) setState(JSON.parse(stored));
-    } catch {
-      /* no-op – corrupted JSON, just keep fallback */
+      const stored = window.localStorage.getItem(key);
+      if (stored !== null) {
+        setState(JSON.parse(stored));
+      }
+    } catch (err) {
+      console.warn(`useHydratedState: failed to parse "${key}" from localStorage`, err);
     }
   }, [key]);
+
+  // Persist back whenever state changes
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    try {
+      window.localStorage.setItem(key, JSON.stringify(state));
+    } catch (err) {
+      console.warn(`useHydratedState: failed to serialize "${key}" to localStorage`, err);
+    }
+  }, [key, state]);
 
   return state;
 }
