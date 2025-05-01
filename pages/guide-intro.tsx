@@ -3,6 +3,7 @@
 
 import { useRouter } from "next/router";
 import { useEffect, useState } from "react";
+import Starfield from "@/components/Starfield";
 import GuideIntro from "@/components/GuideIntro";
 
 export default function GuideIntroPage() {
@@ -20,10 +21,15 @@ export default function GuideIntroPage() {
 
   function pickScenario(s: string) {
     localStorage.setItem("echoes_scenario", s);
-    // → route to the Guide conversation page
     router.push("/guide");
   }
 
   if (!domain) return null;
-  return <GuideIntro domain={domain} onPick={pickScenario} />;
+
+  return (
+    <main className="relative flex flex-col items-center justify-center min-h-screen px-4">
+      <Starfield />
+      <GuideIntro domain={domain} onPick={pickScenario} />
+    </main>
+  );
 }
