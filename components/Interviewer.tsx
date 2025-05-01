@@ -1,105 +1,86 @@
-// components/Interviewer.tsx
+/* ----------------------------------------------------------------
+   Interviewer ▸ asks 10 AI questions, rotates hue, strips meta text
+-----------------------------------------------------------------*/
 "use client";
 
 import { useEffect, useState } from "react";
 import fetchWithTimeout from "@/utils/fetchWithTimeout";
-import Bridge from "@/components/Bridge";
-import LatencyOverlay from "@/components/LatencyOverlay";
 
 interface Props {
-  onComplete: (answers: string[]) => void;
+  onComplete(answers: string[]): void;
 }
 
 export default function Interviewer({ onComplete }: Props) {
-  const [questions, setQuestions] = useState<string[]>([]);
+  const [qIdx, setQIdx]           = useState(0);
+  const [question, setQuestion]   = useState<string | null>(null);
+  const [answer, setAnswer]       = useState("");
   const [answers, setAnswers]     = useState<string[]>([]);
-  const [idx, setIdx]             = useState(0);
   const [loading, setLoading]     = useState(true);
-  const [overlay, setOverlay]     = useState(false);
 
-  // whenever `idx` changes, fetch the next question
-  useEffect(() => {
-    (async () => {
-      setLoading(true);
-      const timer = setTimeout(() => setOverlay(true), 1000);
-      const prompt =
-        idx === 0
-          ? "Each human you speak to has a single, specific superpower... Ask question 1 of 10."
-          : `My previous answer: "${answers[idx - 1]}". Ask question #${idx + 1}.`;
+  // --- ask first question on mount
+  useEffect(() => { askNext(); }, []);
 
-      try {
-        const res = await fetchWithTimeout(
-          "/api/interviewer",
-          {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ prompt }),
-          },
-          10000
-        );
-        const { question } = await res.json();
-        setQuestions((q) => {
-          const copy = [...q];
-          copy[idx] = question;
-          return copy;
-        });
-      } catch {
-        setQuestions((q) => {
-          const copy = [...q];
-          copy[idx] = "The echoes falter. Try again…";
-          return copy;
-        });
-      } finally {
-        clearTimeout(timer);
-        setOverlay(false);
-        setLoading(false);
-      }
-    })();
-  }, [idx, answers]);
-
-  function submitAnswer(text: string) {
-    const trimmed = text.trim();
-    if (!trimmed) return;
-    const nextAnswers = [...answers, trimmed];
-    setAnswers(nextAnswers);
-
-    // global hue rotate
-    document.body.style.setProperty(
-      "--hue-shift",
-      `${(nextAnswers.length / 10) * 360}deg`
+  /* ---- helpers --------------------------------------------------------- */
+  const hueShift = () => {
+    const curr = parseInt(
+      getComputedStyle(document.documentElement)
+        .getPropertyValue("--hue-shift") || "0",
+      10,
     );
+    document.documentElement.style
+      .setProperty("--hue-shift", `${(curr + 20) % 360}deg`);
+  };
 
-    if (nextAnswers.length === 10) {
-      onComplete(nextAnswers);
-    } else {
-      setIdx(nextAnswers.length);
-    }
+  const stripMeta = (raw: string) =>
+    raw.replace(/\*\*(.*?)\*\*/g, "$1")                 // remove bold markdown
+       .replace(/\([^)]*?\)$/g, "")                     // strip trailing (...) meta
+       .replace(/\*/g, "")                              // stray asterisks
+       .trim();
+
+  async function askNext() {
+    setLoading(true);
+    const res  = await fetchWithTimeout("/api/interviewer", { method: "POST", body: JSON.stringify({ idx: qIdx, answers })});
+    const data = await res.json();
+    setQuestion(stripMeta(data.question));
+    setLoading(false);
   }
 
-  return (
-    <div className="max-w-xl mx-auto px-6 py-16">
-      {overlay && <LatencyOverlay />}
-      <Bridge text={`Question ${idx + 1} of 10`} delay={0.2} />
+  /* ---- submit answer --------------------------------------------------- */
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    if (!answer.trim()) return;
 
-      {loading ? (
-        <p className="mt-8 text-center italic">Listening…</p>
-      ) : (
-        <>
-          <p className="mt-6 mb-6 text-lg italic">{questions[idx]}</p>
-          <input
-            autoFocus
-            type="text"
-            className="w-full rounded border border-gold bg-transparent px-4 py-3 text-gold placeholder:text-gold/50 focus:outline-none"
-            placeholder="Type your answer and press Enter"
-            onKeyDown={(e) => {
-              if (e.key === "Enter" && e.currentTarget.value.trim()) {
-                submitAnswer(e.currentTarget.value);
-                e.currentTarget.value = "";
-              }
-            }}
-          />
-        </>
-      )}
-    </div>
+    const updated = [...answers, answer.trim()];
+    setAnswers(updated);
+    setAnswer("");
+    hueShift();
+
+    if (qIdx === 9) {
+      onComplete(updated);
+    } else {
+      setQIdx(qIdx + 1);
+      askNext();
+    }
+  };
+
+  /* ---- render ---------------------------------------------------------- */
+  if (!question) return null;
+
+  return (
+    <section className="w-full max-w-3xl space-y-6">
+      {loading && <p className="italic text-sm">The echoes are thinking…</p>}
+
+      <div dangerouslySetInnerHTML={{ __html: `<strong>Question ${qIdx + 1} of 10</strong><br/>${question}` }} />
+
+      <form onSubmit={handleSubmit}>
+        <input
+          value={answer}
+          onChange={(e) => setAnswer(e.target.value)}
+          placeholder="Type your answer and press ↵"
+          className="w-full rounded bg-transparent border border-gold/40 px-3 py-2 focus:outline-none"
+          autoFocus
+        />
+      </form>
+    </section>
   );
 }
