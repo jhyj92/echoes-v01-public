@@ -1,24 +1,31 @@
 // hooks/useLocalState.js
-import { useState, useEffect } from 'react';
+import { useState, useEffect } from "react";
 
-export function useLocalState(key, initial) {
-  const [val, setVal] = useState(() => {
-    if (typeof window === 'undefined') return initial;
+export function useLocalState(key, initialValue) {
+  // Lazy-init state from localStorage (or fallback to initialValue)
+  const [value, setValue] = useState(() => {
+    if (typeof window === "undefined") {
+      // SSR—return initial on server
+      return initialValue;
+    }
     try {
-      const saved = localStorage.getItem(key);
-      return saved ? JSON.parse(saved) : initial;
-    } catch {
-      return initial;
+      const stored = window.localStorage.getItem(key);
+      return stored !== null ? JSON.parse(stored) : initialValue;
+    } catch (err) {
+      console.warn(`useLocalState: failed to parse "${key}" from localStorage`, err);
+      return initialValue;
     }
   });
 
+  // Whenever `value` changes, write it back to localStorage
   useEffect(() => {
+    if (typeof window === "undefined") return;
     try {
-      localStorage.setItem(key, JSON.stringify(val));
-    } catch {
-      /* ignore */
+      window.localStorage.setItem(key, JSON.stringify(value));
+    } catch (err) {
+      console.warn(`useLocalState: failed to serialize "${key}" to localStorage`, err);
     }
-  }, [key, val]);
+  }, [key, value]);
 
-  return [val, setVal];
+  return [value, setValue];
 }
