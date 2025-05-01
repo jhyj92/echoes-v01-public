@@ -3,6 +3,7 @@
 
 import { useRouter } from "next/router";
 import { useEffect, useState } from "react";
+import Starfield from "@/components/Starfield";
 import WorldReveal from "@/components/WorldReveal";
 
 export default function WorldPage() {
@@ -22,20 +23,15 @@ export default function WorldPage() {
   if (!world) return null;
 
   return (
-    <main className="min-h-screen flex flex-col items-center justify-center px-6 py-12 text-center">
+    <main className="relative flex flex-col items-center justify-center min-h-screen px-4 text-center">
+      <Starfield />
       <WorldReveal world={world} />
       <button
         className="btn-primary mt-8"
-        onClick={() => {
-          router.push("/guide-intro");
-        }}
+        onClick={() => router.push("/guide-intro")}
       >
         Continue
       </button>
     </main>
   );
-}
-
-export async function getServerSideProps() {
-  return { props: {} };
 }
