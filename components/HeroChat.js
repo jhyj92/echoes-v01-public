@@ -10,24 +10,30 @@ import Bridge from "@/components/Bridge";
 
 export default function HeroChat() {
   const router = useRouter();
-  const [history, setHistory] = useState(loadChat());
+
+  // start empty; only load on client
+  const [history, setHistory] = useState([]);
   const [input, setInput]     = useState("");
   const [loading, setLoading] = useState(false);
   const [overlay, setOverlay] = useState(false);
 
-  // Seed with chosen scenario on mount
+  // load saved chat or seed with scenario
   useEffect(() => {
-    if (history.length === 0) {
+    if (typeof window === "undefined") return;
+    const saved = loadChat() || [];
+    if (saved.length) {
+      setHistory(saved);
+    } else {
       const scenario = localStorage.getItem("echoes_scenario") || "";
       setHistory([{ role: "hero", text: scenario }]);
     }
   }, []);
 
-  // Persist after every update
+  // persist & advance after 10 hero messages
   useEffect(() => {
+    if (typeof window === "undefined") return;
     saveChat(history);
-    // After 10 hero messages, move to reflection
-    const heroCount = history.filter((m) => m.role === "hero").length;
+    const heroCount = history.filter(m => m.role === "hero").length;
     if (heroCount >= 10) {
       router.push("/reflection");
     }
@@ -36,15 +42,14 @@ export default function HeroChat() {
   async function sendMessage() {
     if (!input.trim()) return;
     const userMsg = { role: "user", text: input.trim() };
-    setHistory((h) => [...h, userMsg]);
+    setHistory(h => [...h, userMsg]);
     setInput("");
     setLoading(true);
     const timer = setTimeout(() => setOverlay(true), 5000);
 
     try {
-      const prompt = history
-        .concat(userMsg)
-        .map((m) => `${m.role}: ${m.text}`)
+      const prompt = [...history, userMsg]
+        .map(m => `${m.role}: ${m.text}`)
         .join("\n");
       const res = await fetchWithTimeout(
         "/api/heroChat",
@@ -56,9 +61,9 @@ export default function HeroChat() {
         10000
       );
       const { reply } = await res.json();
-      setHistory((h) => [...h, { role: "hero", text: reply }]);
+      setHistory(h => [...h, { role: "hero", text: reply }]);
     } catch {
-      setHistory((h) => [
+      setHistory(h => [
         ...h,
         { role: "hero", text: "The hero’s voice falters…" },
       ]);
@@ -78,13 +83,11 @@ export default function HeroChat() {
         {history.map((m, i) => (
           <p
             key={i}
-            className={`${
+            className={`opacity-90 ${
               m.role === "user" ? "text-right" : "text-left"
-            } opacity-90`}
+            }`}
           >
-            <strong>
-              {m.role === "user" ? "You" : "Hero"}:
-            </strong>{" "}
+            <strong>{m.role === "user" ? "You" : "Hero"}:</strong>{" "}
             {m.text}
           </p>
         ))}
@@ -94,8 +97,8 @@ export default function HeroChat() {
         <input
           type="text"
           value={input}
-          onChange={(e) => setInput(e.target.value)}
-          onKeyDown={(e) => e.key === "Enter" && sendMessage()}
+          onChange={e => setInput(e.target.value)}
+          onKeyDown={e => e.key === "Enter" && sendMessage()}
           className="flex-1 rounded border border-gold bg-transparent px-4 py-3 text-gold placeholder:text-gold/50 focus:outline-none"
         />
         <button
