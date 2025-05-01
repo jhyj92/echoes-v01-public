@@ -8,9 +8,10 @@ import HeroChat from "@/components/HeroChat";
 export default function GuidePage() {
   const router = useRouter();
 
-  // Ensure we have a scenario selected
   useEffect(() => {
-    const scenario = localStorage.getItem("echoes_scenario");
+    const scenario = typeof window !== "undefined"
+      ? localStorage.getItem("echoes_scenario")
+      : null;
     if (!scenario) {
       router.replace("/guide-intro");
     }
@@ -21,4 +22,9 @@ export default function GuidePage() {
       <HeroChat />
     </main>
   );
+}
+
+// Force this page to always render server-side (no static prerender)
+export async function getServerSideProps() {
+  return { props: {} };
 }
