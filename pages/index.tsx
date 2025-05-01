@@ -8,14 +8,11 @@ import useHydratedState from "@/hooks/useHydratedState";
 
 export default function Landing() {
   const router = useRouter();
-  const world  = useHydratedState("echoes_world", null);
+  const world = useHydratedState("echoes_world", null);
   const traits = useHydratedState("echoes_traits", []);
 
-  // If user already has world+traits, skip to guide
   useEffect(() => {
-    if (world && traits.length) {
-      router.replace("/guide");
-    }
+    if (world && traits.length) router.replace("/guide");
   }, [world, traits, router]);
 
   return (
