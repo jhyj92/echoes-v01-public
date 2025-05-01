@@ -1,0 +1,8 @@
+/* styles/themes.css */
+
+:root {
+  --clr-gold: #c8ae7d;
+  --hue-shift: 0deg; /* can be animated by your interviewer logic */
+}
+
+/* Additional theme rules (buttons, fades, etc.) can go here if you like */
