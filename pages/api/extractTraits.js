@@ -1,27 +1,26 @@
 // pages/api/extractTraits.js
-
 import dotenv from "dotenv";
 dotenv.config();
 
-const OR_KEYS = (process.env.OPENROUTER_KEYS || process.env.OPENROUTER_KEY_1 || "")
+const OR_KEYS = (process.env.OPENROUTER_KEYS || "")
   .split(",")
   .map((k) => k.trim())
   .filter(Boolean);
-
 const GM_KEYS = (process.env.GEMINI_KEYS || "")
   .split(",")
   .map((k) => k.trim())
   .filter(Boolean);
 
-let orIndex = 0, gmIndex = 0;
+let orIndex = 0;
+let gmIndex = 0;
 const nextOrKey = () => OR_KEYS[orIndex++ % OR_KEYS.length];
 const nextGmKey = () => GM_KEYS[gmIndex++ % GM_KEYS.length];
 
-async function fetchWithTimeout(url, opts = {}, ms = 10000) {
-  const controller = new AbortController();
-  const id = setTimeout(() => controller.abort(), ms);
+async function fetchWithTimeout(url, opts = {}, ms = 10_000) {
+  const ctrl = new AbortController();
+  const id = setTimeout(() => ctrl.abort(), ms);
   try {
-    return await fetch(url, { ...opts, signal: controller.signal });
+    return await fetch(url, { ...opts, signal: ctrl.signal });
   } finally {
     clearTimeout(id);
   }
@@ -29,27 +28,28 @@ async function fetchWithTimeout(url, opts = {}, ms = 10000) {
 
 export default async function handler(req, res) {
   if (req.method !== "POST") {
+    res.setHeader("Allow", ["POST"]);
     return res.status(405).json({ error: "Method Not Allowed" });
   }
   const { userInput } = req.body || {};
   if (!userInput || typeof userInput !== "string") {
-    return res.status(400).json({ error: "Invalid input" });
+    return res.status(400).json({ error: "Invalid or missing userInput" });
   }
 
   const payload = {
-    model: "deepseek/deepseek-chat-v3-0324:free",
+    model: "deepseek-chat-v3-0324:free",
     messages: [
       {
         role: "system",
         content:
-          "You are a master trait extractor. Output EXACTLY 3 traits as a comma-separated list, no commentary.",
+          "You are a master trait extractor. Output EXACTLY three short traits as a comma-separated list—no commentary.",
       },
       { role: "user", content: userInput },
     ],
     temperature: 0.2,
   };
 
-  // 1) Try DeepSeek (OpenRouter) keys
+  // 1) OpenRouter / DeepSeek
   for (let i = 0; i < OR_KEYS.length; i++) {
     try {
       const resp = await fetchWithTimeout(
@@ -62,20 +62,20 @@ export default async function handler(req, res) {
           },
           body: JSON.stringify(payload),
         },
-        10000
+        10_000
       );
       if (!resp.ok) continue;
       const data = await resp.json();
       const traits = (data.choices?.[0]?.message?.content || "")
-        .replace(/\n+/g, "")
+        .replace(/\s*\n\s*/g, "")
         .trim();
       return res.status(200).json({ traits });
     } catch {
-      // try next key
+      // try next OR key
     }
   }
 
-  // 2) Fallback to Gemini Flash
+  // 2) Fallback: Gemini Flash (chat-bison-001)
   for (let j = 0; j < GM_KEYS.length; j++) {
     try {
       const resp = await fetchWithTimeout(
@@ -88,12 +88,12 @@ export default async function handler(req, res) {
             temperature: 0.2,
           }),
         },
-        8000
+        8_000
       );
       if (!resp.ok) continue;
       const data = await resp.json();
       const traits = (data.candidates?.[0]?.content || "")
-        .replace(/\n+/g, "")
+        .replace(/\s*\n\s*/g, "")
         .trim();
       return res.status(200).json({ traits });
     } catch {
@@ -101,7 +101,7 @@ export default async function handler(req, res) {
     }
   }
 
-  // 3) Ultimate fallback
-  console.error("All extraction keys failed; returning default traits.");
+  // 3) Last-ditch fallback
+  console.error("Trait extraction failed on all keys; returning default traits.");
   return res.status(200).json({ traits: "curiosity, courage, reflection" });
 }
