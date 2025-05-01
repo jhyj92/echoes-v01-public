@@ -1,4 +1,4 @@
-// pages/world.js
+// pages/world.tsx
 "use client";
 
 import { useRouter } from "next/router";
@@ -9,11 +9,10 @@ export default function WorldPage() {
   const router = useRouter();
   const [world, setWorld] = useState<string | null>(null);
 
-  // Load assigned world or redirect back to domains
   useEffect(() => {
-    const w = localStorage.getItem("echoes_domain")     // domain first
-      ? localStorage.getItem("echoes_world")            // then world
-      : null;
+    if (typeof window === "undefined") return;
+    const domain = localStorage.getItem("echoes_domain");
+    const w = domain ? localStorage.getItem("echoes_world") : null;
     if (!w) {
       router.replace("/domains");
     } else {
@@ -26,11 +25,9 @@ export default function WorldPage() {
   return (
     <main className="min-h-screen flex flex-col items-center justify-center px-6 py-12 text-center">
       <WorldReveal world={world} />
-
       <button
         className="btn-primary mt-8"
         onClick={() => {
-          // Persist and advance
           localStorage.setItem("echoes_world", world);
           router.push("/guide-intro");
         }}
@@ -39,4 +36,9 @@ export default function WorldPage() {
       </button>
     </main>
   );
+}
+
+// Force SSR to prevent static prerender from hitting localStorage
+export async function getServerSideProps() {
+  return { props: {} };
 }
