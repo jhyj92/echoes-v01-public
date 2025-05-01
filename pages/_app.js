@@ -1,9 +1,8 @@
 // pages/_app.js
+import "@/styles/globals.css";     // Tailwind + your base styles
+import "@/styles/themes.css";      // your --clr-gold, hue-shift, button resets
+import "@/styles/starfield.css";   // the animate-starfield keyframes
 
-import "@/styles/globals.css";
-import "@/styles/themes.css";
-import "@/styles/starfield.css";
-
-export default function App({ Component, pageProps }) {
+export default function MyApp({ Component, pageProps }) {
   return <Component {...pageProps} />;
 }
