@@ -1,58 +1,43 @@
 // pages/index.tsx
-"use client";
-
 import { useRouter } from "next/router";
-import { useEffect } from "react";
-import Starfield from "@/components/Starfield";
 import useHydratedState from "@/hooks/useHydratedState";
 
 export default function Landing() {
   const router = useRouter();
-  const world  = useHydratedState("echoes_world", null);
-  const traits = useHydratedState("echoes_traits", []);
+  const world  = useHydratedState<string | null>("echoes_world", null);
+  const traits = useHydratedState<string[]>("echoes_traits", []);
 
-  // if we've already answered and selected a world, jump straight to the guide
-  useEffect(() => {
-    if (world && Array.isArray(traits) && traits.length > 0) {
-      router.replace("/guide");
-    }
-  }, [world, traits, router]);
+  // ── If the visitor already finished onboarding, drop them in /guide ──
+  if (world && traits.length) router.replace("/guide");
 
   return (
-    <main className="relative flex flex-col items-center justify-center min-h-screen text-center">
-      <Starfield />
-
-      <h1
-        className="text-[4rem] font-serif text-gold fade-in"
-        style={{ animationDelay: "0.2s" }}
-      >
+    <main className="relative flex flex-col items-center justify-center min-h-screen text-center px-4">
+      {/* heading */}
+      <h1 className="text-6xl md:text-7xl font-serif tracking-wide fade">
         Echoes
       </h1>
 
-      <p
-        className="mt-4 mb-12 max-w-xs text-gold/90 fade-in"
-        style={{ animationDelay: "0.4s" }}
-      >
-        Your soul remembers.
-        <br />
-        Step through the Echoes.
+      <p className="fade mt-4 mb-12 max-w-xs text-gold/90">
+        Your soul remembers.<br />Step through the&nbsp;Echoes.
       </p>
 
-      <button
-        className="btn-primary fade-in"
-        style={{ animationDelay: "0.6s" }}
-        onClick={() => router.push("/onboarding")}
-      >
-        Start Journey
-      </button>
-
-      <button
-        className="btn-outline fade-in mt-4"
-        style={{ animationDelay: "0.8s" }}
-        onClick={() => router.push("/codex")}
-      >
-        View Codex
-      </button>
+      {/* cta buttons */}
+      <div className="space-x-3">
+        <button
+          className="btn-primary fade-in"
+          style={{ ["--delay" as any]: "0.2s" }}
+          onClick={() => router.push("/onboarding")}
+        >
+          Start Journey
+        </button>
+        <button
+          className="btn-outline fade-in"
+          style={{ ["--delay" as any]: "0.4s" }}
+          onClick={() => router.push("/codex")}
+        >
+          View Codex
+        </button>
+      </div>
     </main>
   );
 }
