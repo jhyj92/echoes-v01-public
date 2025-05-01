@@ -1,56 +1,38 @@
-// pages/domains.js
+/* ----------------------------------------------------------------
+   Domains  ▸ shows 5 suggestions and routes to /world
+-----------------------------------------------------------------*/
 "use client";
 
-import { useRouter } from "next/router";
 import { useEffect, useState } from "react";
+import { useRouter } from "next/router";
 import DomainSelector from "@/components/DomainSelector";
 
 export default function DomainsPage() {
   const router = useRouter();
-  const [answers, setAnswers] = useState(null);
-  const [domains, setDomains] = useState([]);
+  const [domains, setDomains] = useState<string[] | null>(null);
 
-  // Load answers from localStorage (client-only)
   useEffect(() => {
-    if (typeof window === "undefined") return;
-    const stored = JSON.parse(localStorage.getItem("echoes_answers") || "[]");
-    setAnswers(stored);
+    (async () => {
+      const res   = await fetch("/api/domains");
+      const data  = await res.json();
+      setDomains(data.domains);
+    })();
   }, []);
 
-  // Call Domains API once answers arrive
-  useEffect(() => {
-    if (answers) {
-      fetch("/api/domains", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ answers }),
-      })
-        .then((res) => res.json())
-        .then((data) => setDomains(data.domains))
-        .catch(() => {
-          /* TODO: friendly error fallback */
-        });
-    }
-  }, [answers]);
-
-  if (!answers) return null;
+  if (!domains) return <p className="p-8">Loading domains…</p>;
 
   return (
-    <main className="min-h-screen flex flex-col items-center justify-center px-6 py-12 text-center">
-      <h1 className="text-3xl font-serif mb-6 fade-in">
-        Discover Your Domain
-      </h1>
-      <DomainSelector
-        domains={domains}
-        onSelect={(domain) => {
-          localStorage.setItem("echoes_domain", domain);
-          router.push("/world");
-        }}
-      />
+    <main className="flex items-center justify-center min-h-screen px-6 py-12">
+      <section className="space-y-6 max-w-xl w-full">
+        <h1 className="text-3xl font-serif text-gold">Discover&nbsp;Your&nbsp;Domain</h1>
+        <DomainSelector
+          domains={domains}
+          onSelect={(domain) => {
+            localStorage.setItem("echoes_domain", domain);
+            router.push("/world");
+          }}
+        />
+      </section>
     </main>
   );
-}
-
-export async function getServerSideProps() {
-  return { props: {} };
 }
