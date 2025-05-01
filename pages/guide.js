@@ -3,6 +3,7 @@
 
 import { useRouter } from "next/router";
 import { useEffect } from "react";
+import Starfield from "@/components/Starfield";
 import HeroChat from "@/components/HeroChat";
 
 export default function GuidePage() {
@@ -15,12 +16,9 @@ export default function GuidePage() {
   }, [router]);
 
   return (
-    <main className="min-h-screen flex items-center justify-center px-6 py-12">
+    <main className="relative flex flex-col items-center justify-center min-h-screen px-4">
+      <Starfield />
       <HeroChat />
     </main>
   );
-}
-
-export async function getServerSideProps() {
-  return { props: {} };
 }
