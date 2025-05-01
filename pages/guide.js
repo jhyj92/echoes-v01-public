@@ -9,12 +9,9 @@ export default function GuidePage() {
   const router = useRouter();
 
   useEffect(() => {
-    const scenario = typeof window !== "undefined"
-      ? localStorage.getItem("echoes_scenario")
-      : null;
-    if (!scenario) {
-      router.replace("/guide-intro");
-    }
+    if (typeof window === "undefined") return;
+    const scenario = localStorage.getItem("echoes_scenario");
+    if (!scenario) router.replace("/guide-intro");
   }, [router]);
 
   return (
@@ -24,7 +21,6 @@ export default function GuidePage() {
   );
 }
 
-// Force this page to always render server-side (no static prerender)
 export async function getServerSideProps() {
   return { props: {} };
 }
