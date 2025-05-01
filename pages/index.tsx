@@ -1,6 +1,4 @@
-/* ----------------------------------------------------------------
-   Landing  ▸  Starfield + centred content + responsive buttons
------------------------------------------------------------------*/
+// pages/index.tsx
 "use client";
 
 import { useRouter } from "next/router";
@@ -12,7 +10,6 @@ export default function Landing() {
   const world  = useHydratedState<string | null>("echoes_world", null);
   const traits = useHydratedState<string[]>("echoes_traits", []);
 
-  /* If visitor completed onboarding, drop them into /guide immediately */
   if (typeof window !== "undefined" && world && traits.length) {
     router.replace("/guide");
   }
@@ -30,14 +27,16 @@ export default function Landing() {
         Step through the Echoes.
       </p>
 
-      <div className="flex gap-3 fade-in" style={{ "--delay": "0.2s" } as any}>
+      <div
+        className="flex gap-3 fade-in"
+        style={{ "--delay": "0.2s" } as React.CSSProperties}
+      >
         <button
           className="btn-primary"
           onClick={() => router.push("/onboarding")}
         >
           Start Journey
         </button>
-
         <button
           className="btn-outline"
           onClick={() => router.push("/codex")}
