@@ -1,12 +1,19 @@
 /* components/TraitForm.module.css */
+:root {
+  /* pull the brand color from CSS variables */
+  --gold: var(--clr-gold);
+}
+
 .wrapper {
   max-width: 320px;
   margin: 30vh auto 0;
   text-align: center;
+  padding: 0 1rem;              /* ensure it doesn’t hug edges on mobile */
 }
 .title {
   font-size: 1.8rem;
   margin-bottom: 0.3rem;
+  color: var(--gold);
 }
 .helper {
   font-size: 0.9rem;
@@ -15,19 +22,32 @@
 }
 .input {
   width: 100%;
-  padding: 10px 12px;
-  background: #1e1e24;
-  border: 1px solid #444;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--gold);
   border-radius: 6px;
-  color: inherit;
+  background: transparent;
+  color: var(--gold);
+  outline: none;
+}
+.input:focus {
+  box-shadow: 0 0 0 2px var(--gold);
 }
 .discoverBtn {
   margin-top: 0.6rem;
   padding: 8px 16px;
-  background: #444;
+  background: var(--gold);
+  color: #0a0b0d;
   border: none;
   border-radius: 6px;
   cursor: pointer;
+  transition: background .3s;
+}
+.discoverBtn:hover:not(:disabled) {
+  background: var(--gold) / 90%;   /* slight hover darken */
+}
+.discoverBtn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 /* Error text styling */
 .error {
