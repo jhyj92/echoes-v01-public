@@ -1,4 +1,3 @@
-// pages/api/extractTraits.js
 import dotenv from "dotenv";
 dotenv.config();
 
@@ -11,8 +10,7 @@ const GM_KEYS = (process.env.GEMINI_KEYS || "")
   .map((k) => k.trim())
   .filter(Boolean);
 
-let orIndex = 0;
-let gmIndex = 0;
+let orIndex = 0, gmIndex = 0;
 const nextOrKey = () => OR_KEYS[orIndex++ % OR_KEYS.length];
 const nextGmKey = () => GM_KEYS[gmIndex++ % GM_KEYS.length];
 
@@ -49,7 +47,7 @@ export default async function handler(req, res) {
     temperature: 0.2,
   };
 
-  // 1) OpenRouter / DeepSeek
+  // 1) Try OpenRouter / DeepSeek
   for (let i = 0; i < OR_KEYS.length; i++) {
     try {
       const resp = await fetchWithTimeout(
@@ -66,7 +64,7 @@ export default async function handler(req, res) {
       );
       if (!resp.ok) continue;
       const data = await resp.json();
-      const traits = (data.choices?.[0]?.message?.content || "")
+      const traits = data.choices?.[0]?.message?.content
         .replace(/\s*\n\s*/g, "")
         .trim();
       return res.status(200).json({ traits });
@@ -75,11 +73,11 @@ export default async function handler(req, res) {
     }
   }
 
-  // 2) Fallback: Gemini Flash (chat-bison-001)
+  // 2) Fallback: Gemini Flash Preview
   for (let j = 0; j < GM_KEYS.length; j++) {
     try {
       const resp = await fetchWithTimeout(
-        `https://generativelanguage.googleapis.com/v1/models/chat-bison-001:generateMessage?key=${nextGmKey()}`,
+        `https://generativelanguage.googleapis.com/v1/models/gemini-2.5-flash-preview-04-17:generateMessage?key=${nextGmKey()}`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -92,7 +90,7 @@ export default async function handler(req, res) {
       );
       if (!resp.ok) continue;
       const data = await resp.json();
-      const traits = (data.candidates?.[0]?.content || "")
+      const traits = data.candidates?.[0]?.content
         .replace(/\s*\n\s*/g, "")
         .trim();
       return res.status(200).json({ traits });
@@ -102,6 +100,8 @@ export default async function handler(req, res) {
   }
 
   // 3) Last-ditch fallback
-  console.error("Trait extraction failed on all keys; returning default traits.");
-  return res.status(200).json({ traits: "curiosity, courage, reflection" });
+  console.error("Trait extraction failed on all keys; returning defaults.");
+  return res
+    .status(200)
+    .json({ traits: "curiosity, courage, reflection" });
 }
