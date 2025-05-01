@@ -1,4 +1,4 @@
-// pages/domains.js
+// pages/domains.tsx
 "use client";
 
 import { useRouter } from "next/router";
@@ -10,21 +10,26 @@ export default function DomainsPage() {
   const [answers, setAnswers] = useState<string[] | null>(null);
 
   useEffect(() => {
-    const stored = JSON.parse(localStorage.getItem("echoes_answers") || "[]");
-    if (stored.length === 0) {
+    const raw = typeof window !== "undefined"
+      ? localStorage.getItem("echoes_answers")
+      : null;
+    if (!raw) {
       router.replace("/onboarding");
     } else {
-      setAnswers(stored);
+      try {
+        setAnswers(JSON.parse(raw));
+      } catch {
+        router.replace("/onboarding");
+      }
     }
   }, [router]);
 
-  if (answers === null) return null; // still loading
-
   function pickDomain(d: string) {
     localStorage.setItem("echoes_domain", d);
-    // → correctly advance to world reveal
     router.push("/world");
   }
+
+  if (!answers) return null;
 
   return <DomainSelector answers={answers} onSelect={pickDomain} />;
 }
