@@ -1,16 +1,22 @@
 // pages/onboarding.js
 "use client";
 
-import Interviewer from "@/components/Interviewer";
 import { useRouter } from "next/router";
+import Interviewer from "@/components/Interviewer";
+import LatencyOverlay from "@/components/LatencyOverlay";
 
-export default function Onboarding() {
+export default function OnboardingPage() {
   const router = useRouter();
 
-  function handleComplete(answers) {
+  const handleComplete = (answers) => {
     localStorage.setItem("echoes_answers", JSON.stringify(answers));
     router.push("/domains");
-  }
+  };
 
-  return <Interviewer onComplete={handleComplete} />;
+  return (
+    <main className="min-h-screen flex items-center justify-center px-6 py-12">
+      <LatencyOverlay />
+      <Interviewer onComplete={handleComplete} />
+    </main>
+  );
 }
