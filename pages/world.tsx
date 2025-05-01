@@ -11,12 +11,11 @@ export default function WorldPage() {
 
   useEffect(() => {
     if (typeof window === "undefined") return;
-    const domain = localStorage.getItem("echoes_domain");
-    const w = domain ? localStorage.getItem("echoes_world") : null;
-    if (!w) {
+    const stored = localStorage.getItem("echoes_world");
+    if (!stored) {
       router.replace("/domains");
     } else {
-      setWorld(w);
+      setWorld(stored);
     }
   }, [router]);
 
@@ -28,7 +27,6 @@ export default function WorldPage() {
       <button
         className="btn-primary mt-8"
         onClick={() => {
-          localStorage.setItem("echoes_world", world);
           router.push("/guide-intro");
         }}
       >
@@ -38,7 +36,6 @@ export default function WorldPage() {
   );
 }
 
-// Force SSR to prevent static prerender from hitting localStorage
 export async function getServerSideProps() {
   return { props: {} };
 }
