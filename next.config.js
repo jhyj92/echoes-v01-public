@@ -1,8 +1,8 @@
-// next.config.js
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  reactStrictMode: true,
+  swcMinify: true,
   images: {
-    // allow use of AVIF/WebP and built-in loader
     formats: ["image/avif", "image/webp"],
   },
 };
