@@ -1,12 +1,16 @@
-// pages/api/interviewer.js
 import dotenv from "dotenv";
 dotenv.config();
 
-const OR_KEYS = (process.env.OPENROUTER_KEYS || "").split(",").map((k) => k.trim()).filter(Boolean);
-const GM_KEYS = (process.env.GEMINI_KEYS || "").split(",").map((k) => k.trim()).filter(Boolean);
+const OR_KEYS = (process.env.OPENROUTER_KEYS || "")
+  .split(",")
+  .map((k) => k.trim())
+  .filter(Boolean);
+const GM_KEYS = (process.env.GEMINI_KEYS || "")
+  .split(",")
+  .map((k) => k.trim())
+  .filter(Boolean);
 
-let orIndex = 0;
-let gmIndex = 0;
+let orIndex = 0, gmIndex = 0;
 const nextOrKey = () => OR_KEYS[orIndex++ % OR_KEYS.length];
 const nextGmKey = () => GM_KEYS[gmIndex++ % GM_KEYS.length];
 
@@ -39,7 +43,7 @@ export default async function handler(req, res) {
     temperature: 0.7,
   };
 
-  // 1) Try OpenRouter
+  // 1) OpenRouter
   for (let i = 0; i < OR_KEYS.length; i++) {
     try {
       const resp = await fetchWithTimeout(
@@ -63,11 +67,11 @@ export default async function handler(req, res) {
     }
   }
 
-  // 2) Fallback: Gemini Flash
+  // 2) Fallback: Gemini Flash Preview
   for (let j = 0; j < GM_KEYS.length; j++) {
     try {
       const resp = await fetchWithTimeout(
-        `https://generativelanguage.googleapis.com/v1/models/chat-bison-001:generateMessage?key=${nextGmKey()}`,
+        `https://generativelanguage.googleapis.com/v1/models/gemini-2.5-flash-preview-04-17:generateMessage?key=${nextGmKey()}`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -85,5 +89,7 @@ export default async function handler(req, res) {
   }
 
   // 3) Hard fallback
-  return res.status(200).json({ question: "The echoes are silent for now…" });
+  return res
+    .status(200)
+    .json({ question: "The echoes are silent for now…" });
 }
