@@ -1,12 +1,16 @@
-// pages/api/domains.js
 import dotenv from "dotenv";
 dotenv.config();
 
-const OR_KEYS = (process.env.OPENROUTER_KEYS || "").split(",").map((k) => k.trim()).filter(Boolean);
-const GM_KEYS = (process.env.GEMINI_KEYS || "").split(",").map((k) => k.trim()).filter(Boolean);
+const OR_KEYS = (process.env.OPENROUTER_KEYS || "")
+  .split(",")
+  .map((k) => k.trim())
+  .filter(Boolean);
+const GM_KEYS = (process.env.GEMINI_KEYS || "")
+  .split(",")
+  .map((k) => k.trim())
+  .filter(Boolean);
 
-let orIndex = 0;
-let gmIndex = 0;
+let orIndex = 0, gmIndex = 0;
 const nextOrKey = () => OR_KEYS[orIndex++ % OR_KEYS.length];
 const nextGmKey = () => GM_KEYS[gmIndex++ % GM_KEYS.length];
 
@@ -31,8 +35,9 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: "Please provide an array of answers" });
   }
 
-  const prompt = `Based on these answers:\n${answers.map((a) => `• ${a}`).join("\n")}\n` +
-    `Suggest five poetically phrased super-power domains.`;
+  const prompt = `Based on these answers:\n${answers
+    .map((a) => `• ${a}`)
+    .join("\n")}\nSuggest five poetically phrased super-power domains.`;
 
   // 1) OpenRouter
   for (let i = 0; i < OR_KEYS.length; i++) {
@@ -70,11 +75,11 @@ export default async function handler(req, res) {
     }
   }
 
-  // 2) Fallback: Gemini Flash
+  // 2) Fallback: Gemini Flash Preview
   for (let j = 0; j < GM_KEYS.length; j++) {
     try {
       const resp = await fetchWithTimeout(
-        `https://generativelanguage.googleapis.com/v1/models/chat-bison-001:generateMessage?key=${nextGmKey()}`,
+        `https://generativelanguage.googleapis.com/v1/models/gemini-2.5-flash-preview-04-17:generateMessage?key=${nextGmKey()}`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -95,7 +100,7 @@ export default async function handler(req, res) {
         .slice(0, 5);
       if (domains.length) return res.status(200).json({ domains });
     } catch {
-      // next GM key
+      // next Gemini key
     }
   }
 
