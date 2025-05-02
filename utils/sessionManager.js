@@ -1,36 +1,25 @@
 // utils/sessionManager.js
-
 /**
- * Save a JSON-serializable value under `echoes_<key>`.
+ * Simple localStorage wrapper with SSR guard
  */
-export function saveSession(key, value) {
-  if (typeof window === "undefined") return;
+export function getSessionValue(key, defaultValue = null) {
+  if (typeof window === "undefined") return defaultValue;
   try {
-    localStorage.setItem(`echoes_${key}`, JSON.stringify(value));
-  } catch (e) {
-    console.warn("Session save failed:", key, e);
-  }
-}
-
-/**
- * Load a value or return `fallback` if none found / parse error.
- */
-export function loadSession(key, fallback = null) {
-  if (typeof window === "undefined") return fallback;
-  try {
-    const raw = localStorage.getItem(`echoes_${key}`);
-    return raw ? JSON.parse(raw) : fallback;
+    const stored = localStorage.getItem(key);
+    return stored ? JSON.parse(stored) : defaultValue;
   } catch {
-    return fallback;
+    return defaultValue;
   }
 }
 
-/**
- * Clear all Echoes-prefixed entries (for a soft reset).
- */
-export function clearSession() {
-  if (typeof window === "undefined") return;
-  Object.keys(localStorage)
-    .filter((k) => k.startsWith("echoes_"))
-    .forEach((k) => localStorage.removeItem(k));
+export function setSessionValue(key, value) {
+  if (typeof window !== "undefined") {
+    localStorage.setItem(key, JSON.stringify(value));
+  }
+}
+
+export function clearSessionValue(key) {
+  if (typeof window !== "undefined") {
+    localStorage.removeItem(key);
+  }
 }
