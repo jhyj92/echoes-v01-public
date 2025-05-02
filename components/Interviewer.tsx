@@ -1,9 +1,7 @@
-/* ----------------------------------------------------------------
-   Interviewer ▸ asks 10 AI questions, rotates hue, strips meta text
------------------------------------------------------------------*/
+// components/Interviewer.tsx
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, FormEvent } from "react";
 import fetchWithTimeout from "@/utils/fetchWithTimeout";
 
 interface Props {
@@ -11,42 +9,60 @@ interface Props {
 }
 
 export default function Interviewer({ onComplete }: Props) {
-  const [qIdx, setQIdx]           = useState(0);
-  const [question, setQuestion]   = useState<string | null>(null);
-  const [answer, setAnswer]       = useState("");
-  const [answers, setAnswers]     = useState<string[]>([]);
-  const [loading, setLoading]     = useState(true);
+  const [qIdx, setQIdx] = useState(0);
+  const [question, setQuestion] = useState<string | null>(null);
+  const [answer, setAnswer] = useState("");
+  const [answers, setAnswers] = useState<string[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  // --- ask first question on mount
-  useEffect(() => { askNext(); }, []);
+  // Ask first question on mount
+  useEffect(() => {
+    askNext();
+  }, []);
 
-  /* ---- helpers --------------------------------------------------------- */
+  /* ---- Helpers --------------------------------------------------------- */
+  // Rotate the hue-shift CSS variable by 20deg each time
   const hueShift = () => {
     const curr = parseInt(
       getComputedStyle(document.documentElement)
         .getPropertyValue("--hue-shift") || "0",
-      10,
+      10
     );
-    document.documentElement.style
-      .setProperty("--hue-shift", `${(curr + 20) % 360}deg`);
+    document.documentElement.style.setProperty(
+      "--hue-shift",
+      `${(curr + 20) % 360}deg`
+    );
   };
 
+  // Strip markdown/meta hints from raw AI output
   const stripMeta = (raw: string) =>
-    raw.replace(/\*\*(.*?)\*\*/g, "$1")                 // remove bold markdown
-       .replace(/\([^)]*?\)$/g, "")                     // strip trailing (...) meta
-       .replace(/\*/g, "")                              // stray asterisks
-       .trim();
+    raw
+      .replace(/\*\*(.*?)\*\*/g, "$1") // remove **bold**
+      .replace(/\([^)]*?\)$/g, "") // strip trailing parenthetical
+      .replace(/\*/g, "") // stray asterisks
+      .trim();
 
+  /* ---- Fetch Next Question --------------------------------------------- */
   async function askNext() {
     setLoading(true);
-    const res  = await fetchWithTimeout("/api/interviewer", { method: "POST", body: JSON.stringify({ idx: qIdx, answers })});
-    const data = await res.json();
-    setQuestion(stripMeta(data.question));
-    setLoading(false);
+    try {
+      const res = await fetchWithTimeout("/api/interviewer", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ answersSoFar: answers }),
+      });
+      const data = await res.json();
+      const rawQ = data.question || "";
+      setQuestion(stripMeta(rawQ));
+    } catch {
+      setQuestion("…");
+    } finally {
+      setLoading(false);
+    }
   }
 
-  /* ---- submit answer --------------------------------------------------- */
-  const handleSubmit = (e) => {
+  /* ---- Handle Submission ---------------------------------------------- */
+  const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
     if (!answer.trim()) return;
 
@@ -63,17 +79,22 @@ export default function Interviewer({ onComplete }: Props) {
     }
   };
 
-  /* ---- render ---------------------------------------------------------- */
-  if (!question) return null;
+  /* ---- Render ---------------------------------------------------------- */
+  if (question === null) return null;
 
   return (
-    <section className="w-full max-w-3xl space-y-6">
+    <section className="w-full max-w-3xl space-y-6 text-gold">
       {loading && <p className="italic text-sm">The echoes are thinking…</p>}
 
-      <div dangerouslySetInnerHTML={{ __html: `<strong>Question ${qIdx + 1} of 10</strong><br/>${question}` }} />
+      <div
+        dangerouslySetInnerHTML={{
+          __html: `<strong>Question ${qIdx + 1} of 10</strong><br/>${question}`,
+        }}
+      />
 
       <form onSubmit={handleSubmit}>
         <input
+          type="text"
           value={answer}
           onChange={(e) => setAnswer(e.target.value)}
           placeholder="Type your answer and press ↵"
