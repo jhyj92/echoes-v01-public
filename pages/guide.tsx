@@ -48,6 +48,6 @@ export default function GuidePage() {
       {!loading && selectedScenario && (
         <HeroChat scenario={selectedScenario} />
       )}
-    </main> {/* ✅ THIS is correct */}
+    </main> 
   );
 }
