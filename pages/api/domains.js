@@ -1,118 +1,81 @@
-// pages/api/domains.js
+// pages/api/domains.ts
 
+import type { NextApiRequest, NextApiResponse } from "next";
+import genai from "google-generativeai";
 import dotenv from "dotenv";
 dotenv.config();
 
+genai.configure({ api_key: process.env.GOOGLE_API_KEY });
+
 import fetchWithTimeout from "@/utils/fetchWithTimeout";
 
-const GM_KEYS = (process.env.GEMINI_KEYS || "")
-  .split(",")
-  .map((k) => k.trim())
-  .filter(Boolean);
 const OR_KEYS = (process.env.OPENROUTER_KEYS || "")
   .split(",")
   .map((k) => k.trim())
   .filter(Boolean);
-
-let gmIndex = 0;
 let orIndex = 0;
-
-function nextGmKey() {
-  const key = GM_KEYS[gmIndex % GM_KEYS.length];
-  gmIndex++;
-  return key;
-}
-
-function nextOrKey() {
+function nextOrKey(): string {
   const key = OR_KEYS[orIndex % OR_KEYS.length];
   orIndex++;
   return key;
 }
 
-export default async function handler(req, res) {
+type DomainsResponse = {
+  suggestions: string[];
+  error?: string;
+};
+
+export default async function handler(
+  req: NextApiRequest,
+  res: NextApiResponse<DomainsResponse>
+) {
   if (req.method !== "POST") {
     res.setHeader("Allow", "POST");
-    return res.status(405).end("Method Not Allowed");
+    return res.status(405).json({ suggestions: [], error: "Method Not Allowed" });
   }
 
-  const { answers } = req.body || {};
-  if (!Array.isArray(answers) || answers.length !== 10) {
-    return res
-      .status(400)
-      .json({ error: "Please supply exactly 10 answers as an array." });
+  const { answers } = req.body as { answers?: string[] };
+  if (!Array.isArray(answers) || answers.length === 0) {
+    return res.status(400).json({ suggestions: [], error: "Missing answers" });
   }
 
-  // Build the user prompt bullets
-  const bulletList = answers.map((a) => `• ${a}`).join("\n");
+  const prompt = `
+Based on these ten answers:
+${answers.map((a, i) => `${i + 1}. ${a}`).join("\n")}
 
-  // System + User prompts
-  const systemPrompt = `
-You are Echoes’ poetic domain suggester.
-Your task is to craft exactly five short, nuanced “super-power domain” labels from a user’s answers.
-Labels should be distinct, poetic, and reflect intersectional strengths—avoid generic terms.
-  `.trim();
+Suggest exactly five poetic “superpower domains.” 
+Each should be a short, evocative label (e.g., "Weaver of Connections"). 
+Return as a JSON array of strings.
+`;
 
-  const userPrompt = `
-Task: Based on the following user answers, identify five distinct and nuanced "super-power domains."
-
-User Answers:
-${bulletList}
-
-Constraints:
-1. Generate exactly five distinct items.
-2. Each item must be a short, poetic label (e.g., "Weaver of Connections").
-3. Domains must directly reflect the unique intersections in the user's answers.
-4. Do NOT add any extra commentary—output only the numbered list.
-
-Output Format:
-1. [Domain Label 1]
-2. [Domain Label 2]
-3. [Domain Label 3]
-4. [Domain Label 4]
-5. [Domain Label 5]
-  `.trim();
-
-  // 1) Primary: Gemini 2.5 Flash Preview
-  for (let i = 0; i < GM_KEYS.length; i++) {
+  // 1) Gemini primary
+  try {
+    const response = await genai.generateMessage({
+      model: "gemini-2.5-flash-preview-04-17",
+      prompt: { messages: [
+        { role: "system", content: "You are an insightful domain suggester." },
+        { role: "user", content: prompt.trim() },
+      ] },
+      temperature: 0.8,
+    });
+    const raw = response.text.trim();
     try {
-      const resp = await fetchWithTimeout(
-        `https://generativelanguage.googleapis.com/v1/models/gemini-2.5-flash-preview-04-17:generateMessage?key=${nextGmKey()}`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            prompt: {
-              messages: [
-                { role: "system", content: systemPrompt },
-                { role: "user", content: userPrompt }
-              ]
-            },
-            temperature: 0.8,
-            stopSequences: ["\n6."]
-          }),
-        },
-        8000
-      );
-
-      if (!resp.ok) continue;
-      const data = await resp.json();
-      const text = data.candidates?.[0]?.content || "";
-      const suggestions = text
-        .split(/\r?\n/)
-        .map((l) => l.replace(/^\d+\.\s*/, "").trim())
-        .filter((l) => l)
-        .slice(0, 5);
-
-      if (suggestions.length === 5) {
-        return res.status(200).json({ suggestions });
-      }
-    } catch (err) {
-      // try next key
+      const parsed: string[] = JSON.parse(raw);
+      return res.status(200).json({ suggestions: parsed.slice(0, 5) });
+    } catch {
+      const items = raw
+        .replace(/[\[\]]/g, "")
+        .split(/[,\\n]/)
+        .map((s) => s.trim().replace(/["']/g, ""))
+        .filter(Boolean);
+      return res.status(200).json({ suggestions: items.slice(0, 5) });
     }
+  } catch {
+    // fall through to OpenRouter
   }
 
-  // 2) Fallback: OpenRouter DeepSeek
-  for (let j = 0; j < OR_KEYS.length; j++) {
+  // 2) OpenRouter fallback
+  for (let i = 0; i < OR_KEYS.length; i++) {
     try {
       const resp = await fetchWithTimeout(
         "https://openrouter.ai/api/v1/chat/completions",
@@ -125,43 +88,30 @@ Output Format:
           body: JSON.stringify({
             model: "deepseek/deepseek-chat-v3-0324:free",
             messages: [
-              { role: "system", content: systemPrompt },
-              { role: "user", content: userPrompt },
+              { role: "system", content: "You are an insightful domain suggester." },
+              { role: "user",   content: prompt.trim() },
             ],
-            temperature: 0.2,
-            stop: ["\n6."],
+            temperature: 0.8,
           }),
         },
-        8000
+        10000
       );
-
       if (!resp.ok) continue;
-      const { choices } = await resp.json();
-      const text = choices?.[0]?.message?.content || "";
-      const suggestions = text
-        .split(/\r?\n/)
-        .map((l) => l.replace(/^\d+\.\s*/, "").trim())
-        .filter((l) => l)
-        .slice(0, 5);
-
-      if (suggestions.length === 5) {
-        return res.status(200).json({ suggestions });
-      }
-    } catch (err) {
-      // next OR key
+      const json = await resp.json();
+      const raw = json.choices?.[0]?.message?.content?.trim() || "";
+      const items = raw
+        .replace(/[\[\]]/g, "")
+        .split(/[,\\n]/)
+        .map((s: string) => s.trim().replace(/["']/g, ""))
+        .filter(Boolean);
+      return res.status(200).json({ suggestions: items.slice(0, 5) });
+    } catch {
+      continue;
     }
   }
 
-  // 3) Ultimate fallback
-  return res
-    .status(200)
-    .json({
-      suggestions: [
-        "Curiosity Weaver",
-        "Silent Observer",
-        "Harmonizer of Discord",
-        "Bridge Between Worlds",
-        "Mirror of Insight"
-      ]
-    });
+  // Static fallback
+  return res.status(200).json({
+    suggestions: ["Curiosity Weave","Resonant Strategist","Empathic Connector","Philosophical Alchemist","Mystic Mirror"]
+  });
 }
