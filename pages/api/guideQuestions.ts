@@ -1,37 +1,26 @@
 // pages/api/guideQuestions.ts
 
 import type { NextApiRequest, NextApiResponse } from "next";
+import genai from "google-generativeai";
 import dotenv from "dotenv";
 dotenv.config();
 
-import fetchWithTimeout from "@/utils/fetchWithTimeout";
+genai.configure({ api_key: process.env.GOOGLE_API_KEY });
 
-const GM_KEYS = (process.env.GEMINI_KEYS || "")
-  .split(",")
-  .map((k) => k.trim())
-  .filter(Boolean);
+import fetchWithTimeout from "@/utils/fetchWithTimeout";
 
 const OR_KEYS = (process.env.OPENROUTER_KEYS || "")
   .split(",")
   .map((k) => k.trim())
   .filter(Boolean);
-
-let gmIndex = 0;
 let orIndex = 0;
-
-function nextGmKey(): string {
-  const key = GM_KEYS[gmIndex % GM_KEYS.length];
-  gmIndex++;
-  return key;
-}
-
 function nextOrKey(): string {
   const key = OR_KEYS[orIndex % OR_KEYS.length];
   orIndex++;
   return key;
 }
 
-type Data = {
+type GuideQSResponse = {
   question?: string;
   done?: boolean;
   error?: string;
@@ -39,7 +28,7 @@ type Data = {
 
 export default async function handler(
   req: NextApiRequest,
-  res: NextApiResponse<Data>
+  res: NextApiResponse<GuideQSResponse>
 ) {
   if (req.method !== "POST") {
     res.setHeader("Allow", "POST");
@@ -50,21 +39,15 @@ export default async function handler(
     domain?: string;
     answersSoFar?: string[];
   };
-
   if (typeof domain !== "string" || !Array.isArray(answersSoFar)) {
-    return res.status(400).json({ error: "Invalid request body." });
+    return res.status(400).json({ error: "Invalid request" });
   }
 
   const step = answersSoFar.length;
   if (step >= 10) {
-    // All questions asked
     return res.status(200).json({ done: true });
   }
 
-  // Build the system and user prompts
-  const systemPrompt = `You are Echoes’ poetic guide.`;
-
-  // Define a short list of sample question stems to vary phrasing
   const stems = [
     "Recall a moment when your actions in this domain felt effortless. What happened?",
     "Think of a time you used this strength to help someone—how did it unfold?",
@@ -78,57 +61,39 @@ export default async function handler(
     "Imagine this strength at its fullest—what vision does that conjure?"
   ];
 
-  const questionStem = stems[step];
-
+  const systemPrompt = `You are Echoes’ poetic guide.`;
   const userPrompt = `
 Domain: "${domain}"
 
-Reflect on this domain through your own lived experience.  
-My guiding reflection question #${step + 1}:
-${questionStem}
+My guiding reflection #${step + 1}:
+${stems[step]}
 
 Constraints:
-- Ask only this single question.
-- Use poetic, narrative-driven language.
-- Do not explain or coach—just the question.
-- Return only the markdown-formatted question itself.
-  `.trim();
+- Ask only this question.
+- Poetic, narrative-driven.
+- No explanations.
+`.trim();
 
-  // Try Gemini primary
-  for (let i = 0; i < GM_KEYS.length; i++) {
-    try {
-      const resp = await fetchWithTimeout(
-        `https://generativelanguage.googleapis.com/v1/models/gemini-2.5-flash-preview-04-17:generateMessage?key=${nextGmKey()}`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            prompt: {
-              messages: [
-                { role: "system", content: systemPrompt },
-                { role: "user", content: userPrompt }
-              ]
-            },
-            temperature: 0.85,
-            stopSequences: ["\n"]
-          }),
-        },
-        8000
-      );
-
-      if (!resp.ok) continue;
-      const data = await resp.json();
-      const question = data.candidates?.[0]?.content?.trim();
-      if (question) {
-        return res.status(200).json({ question });
-      }
-    } catch {
-      // try next Gemini key
-    }
+  // Gemini primary
+  try {
+    const resp = await genai.generateMessage({
+      model: "gemini-2.5-flash-preview-04-17",
+      prompt: {
+        messages: [
+          { role: "system", content: systemPrompt },
+          { role: "user", content: userPrompt }
+        ]
+      },
+      temperature: 0.85
+    });
+    const q = resp.text.trim();
+    return res.status(200).json({ question: q });
+  } catch {
+    // fallback OR
   }
 
-  // Fallback to DeepSeek
-  for (let j = 0; j < OR_KEYS.length; j++) {
+  // OpenRouter fallback
+  for (let i = 0; i < OR_KEYS.length; i++) {
     try {
       const resp = await fetchWithTimeout(
         "https://openrouter.ai/api/v1/chat/completions",
@@ -136,7 +101,7 @@ Constraints:
           method: "POST",
           headers: {
             Authorization: `Bearer ${nextOrKey()}`,
-            "Content-Type": "application/json",
+            "Content-Type": "application/json"
           },
           body: JSON.stringify({
             model: "deepseek/deepseek-chat-v3-0324:free",
@@ -144,26 +109,19 @@ Constraints:
               { role: "system", content: systemPrompt },
               { role: "user", content: userPrompt }
             ],
-            temperature: 0.3,
-            stop: ["\n"]
-          }),
+            temperature: 0.3
+          })
         },
         8000
       );
-
       if (!resp.ok) continue;
-      const { choices } = await resp.json();
-      const question = choices?.[0]?.message?.content?.trim();
-      if (question) {
-        return res.status(200).json({ question });
-      }
+      const js = await resp.json();
+      const q = js.choices?.[0]?.message?.content?.trim() || stems[step];
+      return res.status(200).json({ question: q });
     } catch {
-      // try next OR key
+      continue;
     }
   }
 
-  // Static fallback
-  return res.status(200).json({
-    question: stems[step]
-  });
+  return res.status(200).json({ question: stems[step] });
 }
