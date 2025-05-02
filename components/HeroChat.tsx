@@ -60,7 +60,7 @@ export default function HeroChat({ scenario }: Props) {
     } catch {
       const fallback: ChatMessage = {
         from: "hero",
-        text: "The echoes have paused… Try again shortly.",
+        text: "The echoes have fallen silent… They’ll return any moment.",
       };
       const withFallback = [...updated, fallback];
       setMessages(withFallback);
@@ -74,4 +74,33 @@ export default function HeroChat({ scenario }: Props) {
     <main className="relative flex flex-col items-center justify-center min-h-screen px-4 bg-black text-gold">
       <LatencyOverlay />
 
-      <ul className="space-y-4 w-full max-w-xl
+      <ul className="space-y-4 w-full max-w-xl">
+        {messages.map((m, i) => (
+          <li key={i} className={m.from === "hero" ? "italic" : ""}>
+            <strong>{m.from === "hero" ? "Hero" : "You"}:</strong> {m.text}
+          </li>
+        ))}
+      </ul>
+
+      <form
+        onSubmit={handleSubmit}
+        className="w-full max-w-xl flex items-center space-x-2 mt-4"
+      >
+        <input
+          type="text"
+          disabled={loading}
+          value={input}
+          onChange={(e) => setInput(e.target.value)}
+          placeholder="Respond to the hero…"
+          className="flex-1 rounded bg-transparent border border-gold/40 px-3 py-2 focus:outline-none"
+          autoFocus
+        />
+        <button type="submit" disabled={loading} className="btn-primary">
+          Send
+        </button>
+      </form>
+
+      {loading && <p className="italic mt-2">The echoes are listening…</p>}
+    </main>
+  );
+}
