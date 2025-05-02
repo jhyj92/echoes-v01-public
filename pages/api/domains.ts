@@ -1,83 +1,82 @@
 // pages/api/domains.ts
-
 import type { NextApiRequest, NextApiResponse } from "next";
-import genai from "google-generativeai";
+import { GoogleGenerativeAI } from "@google/generative-ai";
 import dotenv from "dotenv";
 dotenv.config();
-
-genai.configure({ api_key: process.env.GOOGLE_API_KEY });
-
-import fetchWithTimeout from "@/utils/fetchWithTimeout";
 
 const OR_KEYS = (process.env.OPENROUTER_KEYS || "")
   .split(",")
   .map((k) => k.trim())
   .filter(Boolean);
 let orIndex = 0;
-function nextOrKey(): string {
+function nextOrKey() {
   const key = OR_KEYS[orIndex % OR_KEYS.length];
   orIndex++;
   return key;
 }
 
-type DomainsResponse = {
-  suggestions: string[];
-  error?: string;
-};
+// Initialize Gemini SDK client
+const genAI = new GoogleGenerativeAI({
+  apiKey: process.env.GEMINI_KEY!,
+});
+
+async function fetchWithTimeout(
+  url: string,
+  options: RequestInit = {},
+  ms = 10000
+) {
+  const controller = new AbortController();
+  const id = setTimeout(() => controller.abort(), ms);
+  try {
+    return await fetch(url, { ...options, signal: controller.signal });
+  } finally {
+    clearTimeout(id);
+  }
+}
 
 export default async function handler(
   req: NextApiRequest,
-  res: NextApiResponse<DomainsResponse>
+  res: NextApiResponse
 ) {
   if (req.method !== "POST") {
-    res.setHeader("Allow", "POST");
-    return res.status(405).json({ suggestions: [], error: "Method Not Allowed" });
+    return res.status(405).json({ error: "Only POST allowed" });
   }
-
   const { answers } = req.body as { answers?: string[] };
-  if (!Array.isArray(answers) || answers.length === 0) {
-    return res.status(400).json({ suggestions: [], error: "Missing answers" });
+  if (!answers || !answers.length) {
+    return res.status(400).json({ error: "Missing answers" });
   }
 
-  const prompt = `
-Based on these ten answers:
-${answers.map((a, i) => `${i + 1}. ${a}`).join("\n")}
+  const prompt = `Based on these answers:\n${answers
+    .map((a) => `• ${a}`)
+    .join("\n")}\n\nSuggest exactly five distinct, poetic super-power domains.`;
 
-Suggest exactly five poetic “superpower domains.” 
-Each should be a short, evocative label (e.g., "Weaver of Connections"). 
-Return as a JSON array of strings.
-`;
-
-  // 1) Gemini primary
+  // 1️⃣ Try Gemini (primary)
   try {
-    const response = await genai.generateMessage({
+    const chatModel = genAI.getChatModel({
       model: "gemini-2.5-flash-preview-04-17",
-      prompt: { messages: [
-        { role: "system", content: "You are an insightful domain suggester." },
-        { role: "user", content: prompt.trim() },
-      ] },
+    });
+    const response = await chatModel.generateMessage({
+      prompt: { text: prompt },
       temperature: 0.8,
     });
-    const raw = response.text.trim();
-    try {
-      const parsed: string[] = JSON.parse(raw);
-      return res.status(200).json({ suggestions: parsed.slice(0, 5) });
-    } catch {
-      const items = raw
-        .replace(/[\[\]]/g, "")
-        .split(/[,\\n]/)
-        .map((s) => s.trim().replace(/["']/g, ""))
-        .filter(Boolean);
-      return res.status(200).json({ suggestions: items.slice(0, 5) });
+    const text = response.candidates?.[0]?.content || "";
+    const suggestions = text
+      .split(/[\n,]+/)
+      .map((s) => s.trim())
+      .filter(Boolean)
+      .slice(0, 5);
+    if (suggestions.length === 5) {
+      return res.status(200).json({ suggestions });
     }
-  } catch {
-    // fall through to OpenRouter
+    // otherwise fall through to OR
+  } catch (e) {
+    console.error("Gemini fallback:", e);
   }
 
-  // 2) OpenRouter fallback
+  // 2️⃣ Fallback to OpenRouter DeepSeek
   for (let i = 0; i < OR_KEYS.length; i++) {
     try {
-      const resp = await fetchWithTimeout(
+      const response = await fetchWithTimeout(
         "https://openrouter.ai/api/v1/chat/completions",
         {
           method: "POST",
@@ -88,30 +87,34 @@ Return as a JSON array of strings.
           body: JSON.stringify({
             model: "deepseek/deepseek-chat-v3-0324:free",
             messages: [
-              { role: "system", content: "You are an insightful domain suggester." },
-              { role: "user",   content: prompt.trim() },
+              { role: "system", content: "You suggest poetic domains." },
+              { role: "user", content: prompt },
             ],
             temperature: 0.8,
           }),
         },
         10000
       );
-      if (!resp.ok) continue;
-      const json = await resp.json();
-      const raw = json.choices?.[0]?.message?.content?.trim() || "";
-      const items = raw
-        .replace(/[\[\]]/g, "")
-        .split(/[,\\n]/)
-        .map((s: string) => s.trim().replace(/["']/g, ""))
-        .filter(Boolean);
-      return res.status(200).json({ suggestions: items.slice(0, 5) });
-    } catch {
-      continue;
-    }
+      if (!response.ok) continue;
+      const { choices } = await response.json();
+      const text = choices[0].message.content;
+      const suggestions = text
+        .split(/[\n,]+/)
+        .map((s) => s.trim())
+        .filter(Boolean)
+        .slice(0, 5);
+      return res.status(200).json({ suggestions });
+    } catch {}
   }
 
-  // Static fallback
+  // 3️⃣ Ultimate fallback
   return res.status(200).json({
-    suggestions: ["Curiosity Weave","Resonant Strategist","Empathic Connector","Philosophical Alchemist","Mystic Mirror"]
+    suggestions: [
+      "Weaver of Connections",
+      "Silent Observer",
+      "Harmonizer of Discord",
+      "Navigator of Paradox",
+      "Bearer of Light",
+    ],
   });
 }
