@@ -1,94 +1,90 @@
 // pages/api/heroChat.ts
-
 import type { NextApiRequest, NextApiResponse } from "next";
-import genai from "google-generativeai";
+import { GoogleGenAI } from "@google/genai";
 import dotenv from "dotenv";
+
 dotenv.config();
-
-genai.configure({ api_key: process.env.GOOGLE_API_KEY });
-
-import fetchWithTimeout from "@/utils/fetchWithTimeout";
 
 const OR_KEYS = (process.env.OPENROUTER_KEYS || "")
   .split(",")
-  .map((k) => k.trim())
-  .filter(Boolean);
+  .map((k) => k.trim());
 let orIndex = 0;
-function nextOrKey(): string {
+function nextOrKey() {
   const key = OR_KEYS[orIndex % OR_KEYS.length];
   orIndex++;
   return key;
 }
 
-type Msg = { role: "user"|"assistant"; content: string; };
-type HCResponse = { reply: string; done?: boolean; error?: string; };
+const gemini = new GoogleGenAI({ apiKey: process.env.GEMINI_KEY! });
+
+async function fetchWithTimeout(url: string, opts: any = {}, ms = 10000) {
+  const ctrl = new AbortController();
+  const id = setTimeout(() => ctrl.abort(), ms);
+  try {
+    return await fetch(url, { ...opts, signal: ctrl.signal });
+  } finally {
+    clearTimeout(id);
+  }
+}
 
 export default async function handler(
   req: NextApiRequest,
-  res: NextApiResponse<HCResponse>
+  res: NextApiResponse
 ) {
-  if (req.method !== "POST") {
-    res.setHeader("Allow", "POST");
-    return res.status(405).json({ reply: "", error: "Method Not Allowed" });
+  if (req.method !== "POST") return res.status(405).end();
+  const { scenario, history, userMessage } = req.body;
+  if (
+    typeof scenario !== "string" ||
+    !Array.isArray(history) ||
+    typeof userMessage !== "string"
+  ) {
+    return res.status(400).json({ error: "Missing scenario/history/message" });
   }
 
-  const { superpower, heroName, history } = req.body as {
-    superpower?: string;
-    heroName?: string;
-    history?: Msg[];
-  };
-  if (typeof superpower!=="string" || typeof heroName!=="string" || !Array.isArray(history)) {
-    return res.status(400).json({ reply:"", error:"Invalid body" });
-  }
-
-  const turns = history.filter(m=>m.role==="assistant").length;
-  if (turns >= 10) return res.status(200).json({ reply:"", done:true });
-
-  const systemPrompt = `
-You are ${heroName}, a hero in crisis who knows the user's superpower is "${superpower}". Speak with urgency and hope. Number each reply.
-`.trim();
-
+  // Build chat messages
   const messages = [
-    { role: "system", content: systemPrompt },
-    ...history
+    { role: "system", content: `Scenario: ${scenario}` },
+    ...history.map((m: any) => ({
+      role: m.from === "hero" ? "assistant" : "user",
+      content: m.text,
+    })),
+    { role: "user", content: userMessage },
   ];
 
-  // Gemini
+  // Gemini primary
   try {
-    const resp = await genai.generateMessage({
+    const resp = await gemini.models.generateContent({
       model: "gemini-2.5-flash-preview-04-17",
-      prompt: { messages },
-      temperature: 0.75
+      contents: [messages.map((m) => m.content).join("\n")],
     });
     return res.status(200).json({ reply: resp.text.trim() });
-  } catch {
-    // fallback OR
-  }
+  } catch {}
 
   // OpenRouter fallback
-  for (let i=0; i<OR_KEYS.length; i++) {
+  for (let i = 0; i < OR_KEYS.length; i++) {
     try {
-      const resp = await fetchWithTimeout(
+      const body = {
+        model: "deepseek/deepseek-chat-v3-0324:free",
+        messages,
+        temperature: 0.8,
+      };
+      const r = await fetchWithTimeout(
         "https://openrouter.ai/api/v1/chat/completions",
         {
-          method:"POST",
-          headers:{
-            Authorization:`Bearer ${nextOrKey()}`,
-            "Content-Type":"application/json"
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${nextOrKey()}`,
+            "Content-Type": "application/json",
           },
-          body:JSON.stringify({
-            model: "deepseek/deepseek-chat-v3-0324:free",
-            messages,
-            temperature: 0.4
-          })
-        },8000);
-      if (!resp.ok) continue;
-      const j = await resp.json();
-      return res.status(200).json({ reply: j.choices[0].message.content.trim() });
-    } catch {
-      continue;
-    }
+          body: JSON.stringify(body),
+        },
+        10000
+      );
+      if (!r.ok) continue;
+      const { choices } = await r.json();
+      return res.status(200).json({ reply: choices[0].message.content.trim() });
+    } catch {}
   }
 
-  return res.status(200).json({ reply:"..." });
+  res.status(200).json({ reply: "…" });
 }
