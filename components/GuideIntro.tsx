@@ -1,4 +1,3 @@
-// components/GuideIntro.tsx
 "use client";
 
 import { useEffect, useState } from "react";
@@ -6,17 +5,31 @@ import fetchWithTimeout from "@/utils/fetchWithTimeout";
 import LatencyOverlay from "@/components/LatencyOverlay";
 
 interface Props {
-  scenarios: string[];
-  onSelect(s: string): void;
+  domain: string;
+  onPick(s: string): void;
 }
 
-export default function GuideIntro({ scenarios, onSelect }: Props) {
+export default function GuideIntro({ domain, onPick }: Props) {
+  const [scenarios, setScenarios] = useState<string[] | null>(null);
   const [loading, setLoading] = useState(false);
 
-  // If you later want to fetch intros here instead of pages/guide, you could:
-  // useEffect(() => { ... }, []);
+  useEffect(() => {
+    if (!domain) return;
+    setLoading(true);
+    fetchWithTimeout("/api/guideIntro", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ domain }),
+    })
+      .then((res) => res.json())
+      .then((data) => {
+        setScenarios(data.options || []);
+        setLoading(false);
+      })
+      .catch(() => setLoading(false));
+  }, [domain]);
 
-  if (loading) {
+  if (loading || !scenarios) {
     return (
       <div className="flex flex-col items-center">
         <LatencyOverlay />
@@ -34,7 +47,7 @@ export default function GuideIntro({ scenarios, onSelect }: Props) {
         {scenarios.map((s, i) => (
           <li key={i}>
             <button
-              onClick={() => onSelect(s)}
+              onClick={() => onPick(s)}
               className="btn-outline w-full text-left p-4"
             >
               {s}
