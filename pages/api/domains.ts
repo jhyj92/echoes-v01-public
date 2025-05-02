@@ -1,28 +1,29 @@
 // pages/api/domains.ts
 import type { NextApiRequest, NextApiResponse } from "next";
-import { GoogleGenerativeAI } from "@google/generative-ai";
+import { GoogleGenAI } from "@google/genai";
+import fetch from "node-fetch";
 import dotenv from "dotenv";
+
 dotenv.config();
 
 const OR_KEYS = (process.env.OPENROUTER_KEYS || "")
   .split(",")
-  .map((k) => k.trim())
-  .filter(Boolean);
+  .map((k) => k.trim());
 let orIndex = 0;
 function nextOrKey() {
-  const key = OR_KEYS[orIndex % OR_KEYS.length];
+  const k = OR_KEYS[orIndex % OR_KEYS.length];
   orIndex++;
-  return key;
+  return k;
 }
 
-// Initialize Gemini SDK client
-const genAI = new GoogleGenerativeAI({
+// Instantiate Gemini client
+const gemini = new GoogleGenAI({
   apiKey: process.env.GEMINI_KEY!,
 });
 
 async function fetchWithTimeout(
   url: string,
-  options: RequestInit = {},
+  options: any = {},
   ms = 10000
 ) {
   const controller = new AbortController();
@@ -39,43 +40,45 @@ export default async function handler(
   res: NextApiResponse
 ) {
   if (req.method !== "POST") {
-    return res.status(405).json({ error: "Only POST allowed" });
+    return res.status(405).end();
   }
-  const { answers } = req.body as { answers?: string[] };
-  if (!answers || !answers.length) {
+  const { answers } = req.body || {};
+  if (!Array.isArray(answers) || answers.length === 0) {
     return res.status(400).json({ error: "Missing answers" });
   }
 
-  const prompt = `Based on these answers:\n${answers
-    .map((a) => `• ${a}`)
-    .join("\n")}\n\nSuggest exactly five distinct, poetic super-power domains.`;
+  // Build a simple user prompt
+  const prompt = `Based on these answers: ${answers.join(
+    ", "
+  )}, suggest 5 nuanced super-power domains.`;
 
-  // 1️⃣ Try Gemini (primary)
+  // 1️⃣ Primary: Gemini
   try {
-    const chatModel = genAI.getChatModel({
+    const response = await gemini.models.generateContent({
       model: "gemini-2.5-flash-preview-04-17",
+      contents: [prompt],
     });
-    const response = await chatModel.generateMessage({
-      prompt: { text: prompt },
-      temperature: 0.8,
-    });
-    const text = response.candidates?.[0]?.content || "";
-    const suggestions = text
+    const suggestions = response.text
       .split(/[\n,]+/)
       .map((s) => s.trim())
       .filter(Boolean)
       .slice(0, 5);
-    if (suggestions.length === 5) {
-      return res.status(200).json({ suggestions });
-    }
-    // otherwise fall through to OR
-  } catch (e) {
-    console.error("Gemini fallback:", e);
+    return res.status(200).json({ suggestions });
+  } catch (gemErr) {
+    console.warn("Gemini failed, falling back to OpenRouter:", gemErr);
   }
 
-  // 2️⃣ Fallback to OpenRouter DeepSeek
+  // 2️⃣ Secondary: OpenRouter
   for (let i = 0; i < OR_KEYS.length; i++) {
     try {
+      const body = {
+        model: "deepseek/deepseek-chat-v3-0324:free",
+        messages: [
+          { role: "system", content: "You are an insightful domain suggester." },
+          { role: "user", content: prompt },
+        ],
+        temperature: 0.8,
+      };
       const response = await fetchWithTimeout(
         "https://openrouter.ai/api/v1/chat/completions",
         {
@@ -84,37 +87,32 @@ export default async function handler(
             Authorization: `Bearer ${nextOrKey()}`,
             "Content-Type": "application/json",
           },
-          body: JSON.stringify({
-            model: "deepseek/deepseek-chat-v3-0324:free",
-            messages: [
-              { role: "system", content: "You suggest poetic domains." },
-              { role: "user", content: prompt },
-            ],
-            temperature: 0.8,
-          }),
+          body: JSON.stringify(body),
         },
         10000
       );
       if (!response.ok) continue;
       const { choices } = await response.json();
-      const text = choices[0].message.content;
+      const text = choices[0].message.content as string;
       const suggestions = text
         .split(/[\n,]+/)
         .map((s) => s.trim())
         .filter(Boolean)
         .slice(0, 5);
       return res.status(200).json({ suggestions });
-    } catch {}
+    } catch {
+      // try next key
+    }
   }
 
-  // 3️⃣ Ultimate fallback
-  return res.status(200).json({
+  // 3️⃣ Hardcoded fallback
+  res.status(200).json({
     suggestions: [
-      "Weaver of Connections",
-      "Silent Observer",
-      "Harmonizer of Discord",
-      "Navigator of Paradox",
-      "Bearer of Light",
+      "Curiosity Weaver",
+      "Echo Reflector",
+      "Stillness Seeker",
+      "Wonder Forger",
+      "Soul Cartographer",
     ],
   });
 }
