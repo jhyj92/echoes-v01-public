@@ -1,21 +1,22 @@
 // utils/chatManager.js
 
-/**
- * Chat history manager for Echoes HeroChat conversations.
- * Persists per-scenario conversation arrays in localStorage.
- */
+export interface ChatMessage {
+  from: "user" | "hero";
+  text: string;
+}
 
 const HISTORY_KEY_PREFIX = "echoes_history_";
 
 /**
  * Load chat history for a given scenario.
  * @param {string} scenario
- * @returns {{ from: string, text: string }[]}
+ * @returns {ChatMessage[]}
  */
-export function loadHistory(scenario) {
+export function loadHistory(scenario: string): ChatMessage[] {
   try {
     const key = HISTORY_KEY_PREFIX + scenario;
-    return JSON.parse(localStorage.getItem(key) || "[]");
+    const raw = JSON.parse(localStorage.getItem(key) || "[]");
+    return raw as ChatMessage[];
   } catch {
     return [];
   }
@@ -24,9 +25,9 @@ export function loadHistory(scenario) {
 /**
  * Save chat history for a given scenario.
  * @param {string} scenario
- * @param {{ from: string, text: string }[]} messages
+ * @param {ChatMessage[]} messages
  */
-export function saveHistory(scenario, messages) {
+export function saveHistory(scenario: string, messages: ChatMessage[]): void {
   try {
     const key = HISTORY_KEY_PREFIX + scenario;
     localStorage.setItem(key, JSON.stringify(messages));
