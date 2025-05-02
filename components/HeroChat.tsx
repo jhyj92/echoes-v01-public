@@ -1,114 +1,118 @@
-// components/HeroChat.js
+// components/HeroChat.tsx
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState, useEffect, FormEvent } from "react";
 import { useRouter } from "next/router";
 import fetchWithTimeout from "@/utils/fetchWithTimeout";
-import { loadChat, saveChat } from "@/utils/chatManager";
 import LatencyOverlay from "@/components/LatencyOverlay";
-import Bridge from "@/components/Bridge";
+import { loadHistory, saveHistory } from "@/utils/chatManager";
 
-export default function HeroChat() {
+interface Props {
+  scenario: string;
+}
+
+export default function HeroChat({ scenario }: Props) {
   const router = useRouter();
-
-  // start empty; only load on client
-  const [history, setHistory] = useState([]);
-  const [input, setInput]     = useState("");
+  const [messages, setMessages] = useState<
+    { from: "hero" | "user"; text: string }[]
+  >([]);
+  const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
-  const [overlay, setOverlay] = useState(false);
 
-  // load saved chat or seed with scenario
+  // On mount: load history or start new convo
   useEffect(() => {
-    if (typeof window === "undefined") return;
-    const saved = loadChat() || [];
-    if (saved.length) {
-      setHistory(saved);
+    const stored = loadHistory(scenario);
+    if (stored && stored.length) {
+      setMessages(stored);
     } else {
-      const scenario = localStorage.getItem("echoes_scenario") || "";
-      setHistory([{ role: "hero", text: scenario }]);
+      // Kick off with system prompt
+      const init = [
+        {
+          from: "hero",
+          text: `You find yourself in "${scenario}". The hero awaits your counsel.`,
+        },
+      ];
+      setMessages(init);
+      saveHistory(scenario, init);
     }
-  }, []);
+  }, [scenario]);
 
-  // persist & advance after 10 hero messages
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    saveChat(history);
-    const heroCount = history.filter(m => m.role === "hero").length;
-    if (heroCount >= 10) {
-      router.push("/reflection");
-    }
-  }, [history, router]);
-
-  async function sendMessage() {
+  // Send user message
+  const handleSubmit = async (e: FormEvent) => {
+    e.preventDefault();
     if (!input.trim()) return;
-    const userMsg = { role: "user", text: input.trim() };
-    setHistory(h => [...h, userMsg]);
+
+    const userMsg = { from: "user" as const, text: input.trim() };
+    const updated = [...messages, userMsg];
+    setMessages(updated);
+    saveHistory(scenario, updated);
     setInput("");
     setLoading(true);
-    const timer = setTimeout(() => setOverlay(true), 5000);
 
+    // Call API
     try {
-      const prompt = [...history, userMsg]
-        .map(m => `${m.role}: ${m.text}`)
-        .join("\n");
-      const res = await fetchWithTimeout(
-        "/api/heroChat",
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ prompt }),
-        },
-        10000
-      );
-      const { reply } = await res.json();
-      setHistory(h => [...h, { role: "hero", text: reply }]);
+      const res = await fetchWithTimeout("/api/heroChat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ scenario, messages: updated }),
+      });
+      const { reply, done } = await res.json();
+      const heroMsg = { from: "hero" as const, text: reply };
+      const withHero = [...updated, heroMsg];
+      setMessages(withHero);
+      saveHistory(scenario, withHero);
+
+      if (done) {
+        router.push("/reflection");
+      }
     } catch {
-      setHistory(h => [
-        ...h,
-        { role: "hero", text: "The hero’s voice falters…" },
-      ]);
+      const fallback = {
+        from: "hero" as const,
+        text: "The echoes have paused… Try again shortly.",
+      };
+      const withFallback = [...updated, fallback];
+      setMessages(withFallback);
+      saveHistory(scenario, withFallback);
     } finally {
-      clearTimeout(timer);
-      setOverlay(false);
       setLoading(false);
     }
-  }
+  };
 
   return (
-    <div className="px-6 py-12 max-w-2xl mx-auto">
-      {overlay && <LatencyOverlay text="The echoes are responding…" />}
-      <Bridge text="Your conversation" delay={0.2} />
+    <main className="relative flex flex-col items-center justify-center min-h-screen px-4 bg-black text-gold">
+      <LatencyOverlay />
 
-      <div className="space-y-2 my-6 overflow-y-auto max-h-[60vh]">
-        {history.map((m, i) => (
-          <p
-            key={i}
-            className={`opacity-90 ${
-              m.role === "user" ? "text-right" : "text-left"
-            }`}
-          >
-            <strong>{m.role === "user" ? "You" : "Hero"}:</strong>{" "}
-            {m.text}
-          </p>
+      <ul className="space-y-4 w-full max-w-xl">
+        {messages.map((m, i) => (
+          <li key={i} className={m.from === "hero" ? "italic" : ""}>
+            <strong>{m.from === "hero" ? "Hero" : "You"}:</strong> {m.text}
+          </li>
         ))}
-      </div>
+      </ul>
 
-      <div className="flex gap-2">
+      <form
+        onSubmit={handleSubmit}
+        className="w-full max-w-xl flex items-center space-x-2 mt-4"
+      >
         <input
           type="text"
+          disabled={loading}
           value={input}
-          onChange={e => setInput(e.target.value)}
-          onKeyDown={e => e.key === "Enter" && sendMessage()}
-          className="flex-1 rounded border border-gold bg-transparent px-4 py-3 text-gold placeholder:text-gold/50 focus:outline-none"
+          onChange={(e) => setInput(e.target.value)}
+          placeholder="Respond to the hero…"
+          className="flex-1 rounded bg-transparent border border-gold/40 px-3 py-2 focus:outline-none"
+          autoFocus
         />
         <button
-          className="btn-primary"
-          onClick={sendMessage}
+          type="submit"
           disabled={loading}
+          className="btn-primary"
         >
-          {loading ? "Thinking…" : "Send"}
+          Send
         </button>
-      </div>
-    </div>
+      </form>
+
+      {loading && <p className="italic mt-2">The echoes are listening…</p>}
+    </main>
   );
 }
