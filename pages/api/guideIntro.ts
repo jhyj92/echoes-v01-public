@@ -1,127 +1,92 @@
-// pages/api/guideQuestions.ts
-
+// pages/api/guideIntro.ts
 import type { NextApiRequest, NextApiResponse } from "next";
-import genai from "google-generativeai";
+import { GoogleGenAI } from "@google/genai";
 import dotenv from "dotenv";
+
 dotenv.config();
-
-genai.configure({ api_key: process.env.GOOGLE_API_KEY });
-
-import fetchWithTimeout from "@/utils/fetchWithTimeout";
 
 const OR_KEYS = (process.env.OPENROUTER_KEYS || "")
   .split(",")
-  .map((k) => k.trim())
-  .filter(Boolean);
+  .map((k) => k.trim());
 let orIndex = 0;
-function nextOrKey(): string {
+function nextOrKey() {
   const key = OR_KEYS[orIndex % OR_KEYS.length];
   orIndex++;
   return key;
 }
 
-type GuideQSResponse = {
-  question?: string;
-  done?: boolean;
-  error?: string;
-};
+const gemini = new GoogleGenAI({ apiKey: process.env.GEMINI_KEY! });
+
+async function fetchWithTimeout(url: string, opts: any = {}, ms = 10000) {
+  const ctrl = new AbortController();
+  const id = setTimeout(() => ctrl.abort(), ms);
+  try {
+    return await fetch(url, { ...opts, signal: ctrl.signal });
+  } finally {
+    clearTimeout(id);
+  }
+}
 
 export default async function handler(
   req: NextApiRequest,
-  res: NextApiResponse<GuideQSResponse>
+  res: NextApiResponse
 ) {
-  if (req.method !== "POST") {
-    res.setHeader("Allow", "POST");
-    return res.status(405).json({ error: "Method Not Allowed" });
+  if (req.method !== "POST") return res.status(405).end();
+  const { idx, domain, reflections } = req.body;
+  if (
+    typeof idx !== "number" ||
+    typeof domain !== "string" ||
+    !Array.isArray(reflections)
+  ) {
+    return res.status(400).json({ error: "Missing idx, domain or reflections" });
   }
 
-  const { domain, answersSoFar } = req.body as {
-    domain?: string;
-    answersSoFar?: string[];
-  };
-  if (typeof domain !== "string" || !Array.isArray(answersSoFar)) {
-    return res.status(400).json({ error: "Invalid request" });
-  }
-
-  const step = answersSoFar.length;
-  if (step >= 10) {
-    return res.status(200).json({ done: true });
-  }
-
-  const stems = [
-    "Recall a moment when your actions in this domain felt effortless. What happened?",
-    "Think of a time you used this strength to help someone—how did it unfold?",
-    "Describe an instance when this domain made you feel most alive. What details stand out?",
-    "Share a memory where you overcame a challenge using insights from this domain.",
-    "When have you noticed others relying on this particular gift of yours?",
-    "Tell me about a quiet moment of mastery within this domain—what did you discover?",
-    "Reflect on a time your intuition in this domain guided you—what did it reveal?",
-    "Recall a moment of failure in this domain—what lesson emerged for you?",
-    "Describe how this domain shapes the way you view everyday life around you.",
-    "Imagine this strength at its fullest—what vision does that conjure?"
-  ];
-
-  const systemPrompt = `You are Echoes’ poetic guide.`;
-  const userPrompt = `
-Domain: "${domain}"
-
-My guiding reflection #${step + 1}:
-${stems[step]}
-
-Constraints:
-- Ask only this question.
-- Poetic, narrative-driven.
-- No explanations.
-`.trim();
+  const prompt = `
+You are Echoes, a poetic guide. The user selected domain "${domain}"—a hidden
+strength. Based on their previous ${idx} reflections:
+${reflections.join(" | ")}, ask reflection question ${idx + 1}/10
+that explores the essence of this domain. Return only the next question.
+  `.trim();
 
   // Gemini primary
   try {
-    const resp = await genai.generateMessage({
+    const resp = await gemini.models.generateContent({
       model: "gemini-2.5-flash-preview-04-17",
-      prompt: {
-        messages: [
-          { role: "system", content: systemPrompt },
-          { role: "user", content: userPrompt }
-        ]
-      },
-      temperature: 0.85
+      contents: [prompt],
     });
-    const q = resp.text.trim();
-    return res.status(200).json({ question: q });
-  } catch {
-    // fallback OR
-  }
+    return res.status(200).json({ question: resp.text.trim() });
+  } catch {}
 
   // OpenRouter fallback
   for (let i = 0; i < OR_KEYS.length; i++) {
     try {
-      const resp = await fetchWithTimeout(
+      const body = {
+        model: "deepseek/deepseek-chat-v3-0324:free",
+        messages: [
+          { role: "system", content: "You are a poetic domain explorer." },
+          { role: "user", content: prompt },
+        ],
+        temperature: 0.8,
+      };
+      const r = await fetchWithTimeout(
         "https://openrouter.ai/api/v1/chat/completions",
         {
           method: "POST",
           headers: {
             Authorization: `Bearer ${nextOrKey()}`,
-            "Content-Type": "application/json"
+            "Content-Type": "application/json",
           },
-          body: JSON.stringify({
-            model: "deepseek/deepseek-chat-v3-0324:free",
-            messages: [
-              { role: "system", content: systemPrompt },
-              { role: "user", content: userPrompt }
-            ],
-            temperature: 0.3
-          })
+          body: JSON.stringify(body),
         },
-        8000
+        10000
       );
-      if (!resp.ok) continue;
-      const js = await resp.json();
-      const q = js.choices?.[0]?.message?.content?.trim() || stems[step];
-      return res.status(200).json({ question: q });
-    } catch {
-      continue;
-    }
+      if (!r.ok) continue;
+      const { choices } = await r.json();
+      return res.status(200).json({ question: choices[0].message.content.trim() });
+    } catch {}
   }
 
-  return res.status(200).json({ question: stems[step] });
+  res
+    .status(200)
+    .json({ question: "Reflect on a moment you felt truly aligned." });
 }
