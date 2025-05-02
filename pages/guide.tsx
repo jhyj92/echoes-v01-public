@@ -11,7 +11,6 @@ import HeroChat from "@/components/HeroChat";
 export default function GuidePage() {
   const router = useRouter();
   const [domain, setDomain] = useState<string | null>(null);
-  const [scenarios, setScenarios] = useState<string[]>([]);
   const [selectedScenario, setSelectedScenario] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -26,37 +25,13 @@ export default function GuidePage() {
     }
   }, [router]);
 
-  // 2️⃣ Fetch available hero‐in‐crisis scenarios
-  useEffect(() => {
-    if (!domain) return;
-    setLoading(true);
-    fetch("/api/guideIntro", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ domain }),
-    })
-      .then((res) => res.json())
-      .then(({ scenarios: s }: { scenarios: string[] }) => {
-        setScenarios(s);
-      })
-      .catch(() => {
-        setScenarios([
-          "A stranded alchemist on a storm-tossed shore",
-          "A weary captain navigating a labyrinthine forest",
-        ]);
-      })
-      .finally(() => {
-        setLoading(false);
-      });
-  }, [domain]);
-
-  // 3️⃣ Handle scenario selection
-  const handleSelect = (scenario: string) => {
+  // 2️⃣ Handle scenario selection
+  const handlePick = (scenario: string) => {
     setSelectedScenario(scenario);
     localStorage.setItem("echoes_scenario", scenario);
   };
 
-  // 4️⃣ Render
+  // 3️⃣ Render
   if (!domain) return null;
 
   return (
@@ -67,12 +42,8 @@ export default function GuidePage() {
       {loading && <p className="italic mt-4">The echoes are shaping your path…</p>}
 
       {!loading && !selectedScenario && (
-        <GuideIntro scenarios={scenarios} onSelect={handleSelect} />
+        <GuideIntro domain={domain} onPick={handlePick} />
       )}
 
       {!loading && selectedScenario && (
-        <HeroChat scenario={selectedScenario} />
-      )}
-    </main>
-  );
-}
+        <HeroChat scenario={
