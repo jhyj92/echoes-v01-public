@@ -1,43 +1,33 @@
 // pages/hero.tsx
 "use client";
 
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
+import { useRouter } from "next/router";
+import Starfield from "@/components/Starfield";
 import LatencyOverlay from "@/components/LatencyOverlay";
 import HeroChat from "@/components/HeroChat";
-import { useRouter } from "next/router";
 
 export default function HeroPage() {
   const router = useRouter();
-  const [superpower, setSuperpower] = useState<string>("");
-  const [history, setHistory] = useState<{ role: string; content: string }[]>([]);
+  const [scenario, setScenario] = useState<string | null>(null);
 
   useEffect(() => {
-    setSuperpower(localStorage.getItem("echoes_superpower") || "");
-  }, []);
-
-  const handleSend = async (message: string) => {
-    const newHist = [...history, { role: "user", content: message }];
-    setHistory(newHist);
-    const res = await fetch("/api/heroChat", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        superpower,
-        heroName: "Your Guide",
-        history: newHist,
-      }),
-    });
-    const { reply, done } = await res.json();
-    setHistory([...newHist, { role: "assistant", content: reply }]);
-    if (done) {
-      router.push("/reflection");
+    if (typeof window === "undefined") return;
+    const s = localStorage.getItem("echoes_scenario");
+    if (!s) {
+      router.replace("/guide");
+    } else {
+      setScenario(s);
     }
-  };
+  }, [router]);
+
+  if (!scenario) return null;
 
   return (
     <main className="min-h-screen flex flex-col items-center justify-center px-6 py-12 bg-black text-gold">
       <LatencyOverlay />
-      <HeroChat history={history} onSend={handleSend} />
+      <Starfield />
+      <HeroChat scenario={scenario} />
     </main>
   );
 }
