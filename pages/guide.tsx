@@ -46,4 +46,8 @@ export default function GuidePage() {
       )}
 
       {!loading && selectedScenario && (
-        <HeroChat scenario={
+        <HeroChat scenario={selectedScenario} />
+      )}
+    </main>  {/* ✅ THIS WAS MISSING */}
+  );
+}
