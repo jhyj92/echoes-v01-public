@@ -1,97 +1,178 @@
-// pages/api/reflectionLetter.js
+// pages/api/reflectionLetter.ts
+
+import type { NextApiRequest, NextApiResponse } from "next";
 import dotenv from "dotenv";
 dotenv.config();
 
-const OR_KEYS = (process.env.OPENROUTER_KEYS || "").split(",").map((k) => k.trim()).filter(Boolean);
-const GM_KEYS = (process.env.GEMINI_KEYS || "").split(",").map((k) => k.trim()).filter(Boolean);
+import fetchWithTimeout from "@/utils/fetchWithTimeout";
 
-let orIndex = 0;
+const GM_KEYS = (process.env.GEMINI_KEYS || "")
+  .split(",")
+  .map((k) => k.trim())
+  .filter(Boolean);
+
+const OR_KEYS = (process.env.OPENROUTER_KEYS || "")
+  .split(",")
+  .map((k) => k.trim())
+  .filter(Boolean);
+
 let gmIndex = 0;
-const nextOrKey = () => OR_KEYS[orIndex++ % OR_KEYS.length];
-const nextGmKey = () => GM_KEYS[gmIndex++ % GM_KEYS.length];
+let orIndex = 0;
 
-async function fetchWithTimeout(url, opts = {}, ms = 12_000) {
-  const ctrl = new AbortController();
-  const id = setTimeout(() => ctrl.abort(), ms);
-  try {
-    return await fetch(url, { ...opts, signal: ctrl.signal });
-  } finally {
-    clearTimeout(id);
-  }
+function nextGmKey(): string {
+  const key = GM_KEYS[gmIndex % GM_KEYS.length];
+  gmIndex++;
+  return key;
 }
 
-export default async function handler(req, res) {
+function nextOrKey(): string {
+  const key = OR_KEYS[orIndex % OR_KEYS.length];
+  orIndex++;
+  return key;
+}
+
+interface Message {
+  role: "user" | "assistant";
+  content: string;
+}
+
+interface ReflectionLetterResponse {
+  letter?: string;
+  error?: string;
+}
+
+export default async function handler(
+  req: NextApiRequest,
+  res: NextApiResponse<ReflectionLetterResponse>
+) {
   if (req.method !== "POST") {
-    res.setHeader("Allow", ["POST"]);
-    return res.status(405).json({ error: "Method Not Allowed" });
-  }
-  const { scenario, answers, heroMessages } = req.body || {};
-  if (!scenario || !Array.isArray(answers) || !Array.isArray(heroMessages)) {
-    return res.status(400).json({ error: "Missing scenario, answers, or heroMessages" });
+    res.setHeader("Allow", "POST");
+    return res
+      .status(405)
+      .json({ error: "Method Not Allowed" });
   }
 
-  const summary = `Scenario: ${scenario}\nYour answers: ${answers.join(" | ")}\n` +
-    `Hero’s messages: ${heroMessages.join(" | ")}`;
-  const prompt = `Write a poetic letter from the hero reflecting on your emerging superpower. ` +
-    `How has the journey shifted their view? What counsel do they offer?`;
+  const { heroName, superpower, history } = req.body as {
+    heroName?: string;
+    superpower?: string;
+    history?: Message[];
+  };
 
-  // 1) OpenRouter
-  for (let i = 0; i < OR_KEYS.length; i++) {
-    try {
-      const resp = await fetchWithTimeout(
-        "https://openrouter.ai/api/v1/chat/completions",
-        {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${nextOrKey()}`,
-            "Content-Type": "application/json",
+  if (
+    typeof heroName !== "string" ||
+    typeof superpower !== "string" ||
+    !Array.isArray(history) ||
+    history.length === 0
+  ) {
+    return res
+      .status(400)
+      .json({ error: "Invalid request payload." });
+  }
+
+  // Build the system prompt: hero writing the letter
+  const systemPrompt = `
+You are ${heroName}, the heroic figure with whom the user conversed. Now you write a heartfelt reflection letter to the user. You know their superpower is "${superpower}". Refer to the conversation history as evidence of how their power manifested and grew. Write in a poetic, warm tone as a letter.
+  `.trim();
+
+  // Flatten the last 10 messages (both roles) into a bullet list
+  const historyBullets = history
+    .map((m, idx) => {
+      const who = m.role === "assistant" ? heroName : "You";
+      const num = idx + 1;
+      return `• ${num}. ${who}: ${m.content}`;
+    })
+    .join("\n");
+
+  const userPrompt = `
+Conversation Highlights:
+${historyBullets}
+
+Based on the above, write a reflective letter of 2–3 paragraphs. In the letter:
+- Explicitly name and celebrate their superpower "${superpower}".
+- Reflect on at least two moments from the conversation where this power shone.
+- Offer gentle guidance on how they might continue to hone it.
+- Conclude with a warm, encouraging sign-off as ${heroName}.
+  `.trim();
+
+  // Helper to call an LLM with rotation
+  async function callGemini(): Promise<string | null> {
+    for (let i = 0; i < GM_KEYS.length; i++) {
+      try {
+        const resp = await fetchWithTimeout(
+          `https://generativelanguage.googleapis.com/v1/models/gemini-2.5-flash-preview-04-17:generateMessage?key=${nextGmKey()}`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              prompt: {
+                messages: [
+                  { role: "system", content: systemPrompt },
+                  { role: "user", content: userPrompt }
+                ]
+              },
+              temperature: 0.7,
+              // Let paragraphs flow naturally
+            }),
           },
-          body: JSON.stringify({
-            model: "deepseek-chat-v3-0324:free",
-            messages: [
-              { role: "system", content: "You are a reflective hero writing from the heart." },
-              { role: "user", content: `${summary}\n\n${prompt}` },
-            ],
-            temperature: 0.7,
-          }),
-        },
-        12_000
-      );
-      if (!resp.ok) continue;
-      const { choices } = await resp.json();
-      const letter = choices[0]?.message?.content?.trim();
-      if (letter) return res.status(200).json({ letter });
-    } catch {
-      // next OR key
+          10000
+        );
+        if (!resp.ok) continue;
+        const data = await resp.json();
+        const letter = data.candidates?.[0]?.content?.trim();
+        if (letter) return letter;
+      } catch {
+        // try next Gemini key
+      }
     }
+    return null;
   }
 
-  // 2) Fallback: Gemini Pro
-  for (let j = 0; j < GM_KEYS.length; j++) {
-    try {
-      const resp = await fetchWithTimeout(
-        `https://generativelanguage.googleapis.com/v1/models/gemini-pro:generateMessage?key=${nextGmKey()}`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            prompt: { text: `${summary}\n\n${prompt}` },
-            temperature: 0.7,
-          }),
-        },
-        12_000
-      );
-      if (!resp.ok) continue;
-      const data = await resp.json();
-      const letter = data.candidates?.[0]?.content?.trim();
-      if (letter) return res.status(200).json({ letter });
-    } catch {
-      // next GM key
+  async function callDeepSeek(): Promise<string | null> {
+    for (let j = 0; j < OR_KEYS.length; j++) {
+      try {
+        const resp = await fetchWithTimeout(
+          "https://openrouter.ai/api/v1/chat/completions",
+          {
+            method: "POST",
+            headers: {
+              Authorization: `Bearer ${nextOrKey()}`,
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              model: "deepseek/deepseek-chat-v3-0324:free",
+              messages: [
+                { role: "system", content: systemPrompt },
+                { role: "user", content: userPrompt }
+              ],
+              temperature: 0.35,
+            }),
+          },
+          10000
+        );
+        if (!resp.ok) continue;
+        const json = await resp.json();
+        const letter = json.choices?.[0]?.message?.content?.trim();
+        if (letter) return letter;
+      } catch {
+        // try next OR key
+      }
     }
+    return null;
   }
 
-  // 3) Hard fallback
-  return res.status(500).json({
-    letter: "The hero’s pen falters… their reflections remain unspoken.",
-  });
+  // Attempt Gemini → DeepSeek → Static fallback
+  let letter = await callGemini();
+  if (!letter) letter = await callDeepSeek();
+  if (!letter) {
+    letter = `Dear Seeker,
+  
+Though the echoes of our conversation linger like distant stars, your gift—${superpower}—blazes brightly. Remember when you guided me through the storm with calm insight, and when your unique vision reshaped our path? These moments reveal the heart of your power.
+
+Continue to trust this strength. Let it light your way in future trials, and know I stand with you, always.
+
+Yours in echoes,
+${heroName}`;
+  }
+
+  return res.status(200).json({ letter });
 }
