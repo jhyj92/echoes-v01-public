@@ -2,16 +2,19 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import CodexTree from "@/components/CodexTree";
+import CodexTree, { CodexEntry } from "@/components/CodexTree";
 import Starfield from "@/components/Starfield";
 
 export default function CodexPage() {
-  const [tree, setTree] = useState<string[] | null>(null);
+  const [tree, setTree] = useState<CodexEntry[] | null>(null);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
-    const stored = JSON.parse(localStorage.getItem("echoes_codex") || "[]");
-    setTree(stored);
+    const stored: string[] = JSON.parse(localStorage.getItem("echoes_codex") || "[]");
+    const entries: CodexEntry[] = stored.map((str) => ({
+      title: str
+    }));
+    setTree(entries);
   }, []);
 
   if (!tree) return null;
