@@ -1,37 +1,26 @@
 // pages/api/superpower.ts
 
 import type { NextApiRequest, NextApiResponse } from "next";
+import genai from "google-generativeai";
 import dotenv from "dotenv";
 dotenv.config();
 
-import fetchWithTimeout from "@/utils/fetchWithTimeout";
+genai.configure({ api_key: process.env.GOOGLE_API_KEY });
 
-const GM_KEYS = (process.env.GEMINI_KEYS || "")
-  .split(",")
-  .map((k) => k.trim())
-  .filter(Boolean);
+import fetchWithTimeout from "@/utils/fetchWithTimeout";
 
 const OR_KEYS = (process.env.OPENROUTER_KEYS || "")
   .split(",")
   .map((k) => k.trim())
   .filter(Boolean);
-
-let gmIndex = 0;
 let orIndex = 0;
-
-function nextGmKey(): string {
-  const key = GM_KEYS[gmIndex % GM_KEYS.length];
-  gmIndex++;
-  return key;
-}
-
 function nextOrKey(): string {
   const key = OR_KEYS[orIndex % OR_KEYS.length];
   orIndex++;
   return key;
 }
 
-type SuperpowerResponse = {
+type SPResponse = {
   superpower: string;
   description: string;
   error?: string;
@@ -39,7 +28,7 @@ type SuperpowerResponse = {
 
 export default async function handler(
   req: NextApiRequest,
-  res: NextApiResponse<SuperpowerResponse>
+  res: NextApiResponse<SPResponse>
 ) {
   if (req.method !== "POST") {
     res.setHeader("Allow", "POST");
@@ -50,92 +39,51 @@ export default async function handler(
     domain?: string;
     guideAnswers?: string[];
   };
-
-  if (
-    typeof domain !== "string" ||
-    !Array.isArray(guideAnswers) ||
-    guideAnswers.length < 10
-  ) {
-    return res
-      .status(400)
-      .json({ superpower: "", description: "", error: "Invalid domain or insufficient guide answers." });
+  if (typeof domain !== "string" || !Array.isArray(guideAnswers) || guideAnswers.length < 10) {
+    return res.status(400).json({ superpower: "", description: "", error: "Invalid input" });
   }
 
-  // Build the prompts
+  const bullets = guideAnswers.map((a, i) => `• ${i+1}. ${a}`).join("\n");
   const systemPrompt = `You are Echoes’ insightful narrator.`;
-
-  const bulletList = guideAnswers
-    .map((ans, i) => `• Q${i + 1}: ${ans}`)
-    .join("\n");
-
   const userPrompt = `
 Domain: "${domain}"
 
-Based on the following ten reflections from the user:
-${bulletList}
+Based on these user reflections:
+${bullets}
 
-Task:
-Synthesize a single, poetic superpower label that captures this user’s unique strength within the chosen domain. Then provide a brief (1-2 sentence) evocative description of how this superpower manifests in their life.
+Synthesize a JSON with "superpower" (one poetic label) and "description" (1–2 sentence evocative).
+`;
 
-Output Format:
-{
-  "superpower": "[Poetic Superpower Label]",
-  "description": "[Brief evocative description]"
-}
-  `.trim();
-
-  // Try Gemini primary
-  for (let i = 0; i < GM_KEYS.length; i++) {
+  // Gemini primary
+  try {
+    const resp = await genai.generateMessage({
+      model: "gemini-2.5-flash-preview-04-17",
+      prompt: {
+        messages: [
+          { role: "system", content: systemPrompt },
+          { role: "user", content: userPrompt }
+        ]
+      },
+      temperature: 0.75
+    });
+    const txt = resp.text.trim();
     try {
-      const resp = await fetchWithTimeout(
-        `https://generativelanguage.googleapis.com/v1/models/gemini-2.5-flash-preview-04-17:generateMessage?key=${nextGmKey()}`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            prompt: {
-              messages: [
-                { role: "system", content: systemPrompt },
-                { role: "user", content: userPrompt }
-              ]
-            },
-            temperature: 0.75,
-            stopSequences: ["\n\n"]
-          }),
-        },
-        10000
-      );
-
-      if (!resp.ok) continue;
-      const data = await resp.json();
-      const content = data.candidates?.[0]?.content?.trim();
-      if (content) {
-        // Try to parse JSON
-        try {
-          const parsed = JSON.parse(content);
-          return res.status(200).json({
-            superpower: parsed.superpower,
-            description: parsed.description
-          });
-        } catch {
-          // If parsing fails, fall back to regex
-          const matchLabel = content.match(/"superpower"\s*:\s*"([^"]+)"/);
-          const matchDesc = content.match(/"description"\s*:\s*"([^"]+)"/);
-          const label = matchLabel?.[1] || "";
-          const desc = matchDesc?.[1] || "";
-          return res.status(200).json({
-            superpower: label,
-            description: desc
-          });
-        }
-      }
+      const p = JSON.parse(txt);
+      return res.status(200).json({ superpower: p.superpower, description: p.description });
     } catch {
-      // try next Gemini key
+      const spMatch = txt.match(/"superpower"\s*:\s*"([^"]+)"/);
+      const descMatch = txt.match(/"description"\s*:\s*"([^"]+)"/);
+      return res.status(200).json({
+        superpower: spMatch?.[1] || "",
+        description: descMatch?.[1] || ""
+      });
     }
+  } catch {
+    // fallback OR
   }
 
-  // Fallback to DeepSeek
-  for (let j = 0; j < OR_KEYS.length; j++) {
+  // OpenRouter fallback
+  for (let i = 0; i < OR_KEYS.length; i++) {
     try {
       const resp = await fetchWithTimeout(
         "https://openrouter.ai/api/v1/chat/completions",
@@ -143,50 +91,35 @@ Output Format:
           method: "POST",
           headers: {
             Authorization: `Bearer ${nextOrKey()}`,
-            "Content-Type": "application/json",
+            "Content-Type": "application/json"
           },
           body: JSON.stringify({
             model: "deepseek/deepseek-chat-v3-0324:free",
             messages: [
               { role: "system", content: systemPrompt },
-              { role: "user", content: userPrompt }
+              { role: "user",   content: userPrompt }
             ],
-            temperature: 0.4,
-            stop: ["\n\n"]
-          }),
+            temperature: 0.4
+          })
         },
         10000
       );
-
       if (!resp.ok) continue;
-      const json = await resp.json();
-      const content = json.choices?.[0]?.message?.content?.trim();
-      if (content) {
-        try {
-          const parsed = JSON.parse(content);
-          return res.status(200).json({
-            superpower: parsed.superpower,
-            description: parsed.description
-          });
-        } catch {
-          const matchLabel = content.match(/"superpower"\s*:\s*"([^"]+)"/);
-          const matchDesc = content.match(/"description"\s*:\s*"([^"]+)"/);
-          const label = matchLabel?.[1] || "";
-          const desc = matchDesc?.[1] || "";
-          return res.status(200).json({
-            superpower: label,
-            description: desc
-          });
-        }
-      }
+      const j = await resp.json();
+      const txt = j.choices?.[0]?.message?.content?.trim() || "";
+      const spMatch = txt.match(/"superpower"\s*:\s*"([^"]+)"/);
+      const descMatch = txt.match(/"description"\s*:\s*"([^"]+)"/);
+      return res.status(200).json({
+        superpower: spMatch?.[1] || "",
+        description: descMatch?.[1] || ""
+      });
     } catch {
-      // try next OR key
+      continue;
     }
   }
 
-  // Static fallback
   return res.status(200).json({
     superpower: "Resonant Seeker",
-    description: "You have an uncanny ability to find meaning and harmony where others only see noise."
+    description: "You have an uncanny ability to find meaning and harmony where others see noise."
   });
 }
