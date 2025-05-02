@@ -1,21 +1,15 @@
 // utils/whispers.js
-
 /**
- * A rotating pool of hidden poetic lore seeds.
+ * Hidden poetic "whispers" that can be triggered in the UI
  */
-export const whispers = [
-  "Stars remember the wishes we forget.",
-  "Silence is the doorway every echo passes through.",
-  "Dreams are maps written in ink that fades by dawn.",
-  "Courage sometimes hides in questions, not answers.",
-  "The universe leans closer when you whisper back."
+const pool = [
+  "A soft echo stirs beneath the waves...",
+  "Listen closely—your heart knows the way.",
+  "Shadows shift; a new path whispers your name.",
+  "In the hush, the world speaks back to you.",
+  "Every breath carries a hidden refrain."
 ];
 
-/**
- * Pick one whisper at random.
- * @returns {string}
- */
-export function randomWhisper() {
-  const idx = Math.floor(Math.random() * whispers.length);
-  return whispers[idx];
+export function getRandomWhisper() {
+  return pool[Math.floor(Math.random() * pool.length)];
 }
