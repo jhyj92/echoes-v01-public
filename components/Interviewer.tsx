@@ -21,7 +21,6 @@ export default function Interviewer({ onComplete }: Props) {
   }, []);
 
   /* ---- Helpers --------------------------------------------------------- */
-  // Rotate the hue-shift CSS variable by 20deg each time
   const hueShift = () => {
     const curr = parseInt(
       getComputedStyle(document.documentElement)
@@ -34,12 +33,11 @@ export default function Interviewer({ onComplete }: Props) {
     );
   };
 
-  // Strip markdown/meta hints from raw AI output
   const stripMeta = (raw: string) =>
     raw
-      .replace(/\*\*(.*?)\*\*/g, "$1") // remove **bold**
-      .replace(/\([^)]*?\)$/g, "") // strip trailing parenthetical
-      .replace(/\*/g, "") // stray asterisks
+      .replace(/\*\*(.*?)\*\*/g, "$1")
+      .replace(/\([^)]*?\)$/g, "")
+      .replace(/\*/g, "")
       .trim();
 
   /* ---- Fetch Next Question --------------------------------------------- */
@@ -52,8 +50,7 @@ export default function Interviewer({ onComplete }: Props) {
         body: JSON.stringify({ answersSoFar: answers }),
       });
       const data = await res.json();
-      const rawQ = data.question || "";
-      setQuestion(stripMeta(rawQ));
+      setQuestion(stripMeta(data.question || ""));
     } catch {
       setQuestion("…");
     } finally {
@@ -62,7 +59,7 @@ export default function Interviewer({ onComplete }: Props) {
   }
 
   /* ---- Handle Submission ---------------------------------------------- */
-  const handleSubmit = (e: FormEvent) => {
+  const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!answer.trim()) return;
 
