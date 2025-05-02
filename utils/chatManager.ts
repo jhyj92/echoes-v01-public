@@ -1,4 +1,4 @@
-// utils/chatManager.js
+// utils/chatManager.ts
 
 export interface ChatMessage {
   from: "user" | "hero";
@@ -9,8 +9,8 @@ const HISTORY_KEY_PREFIX = "echoes_history_";
 
 /**
  * Load chat history for a given scenario.
- * @param {string} scenario
- * @returns {ChatMessage[]}
+ * @param scenario
+ * @returns ChatMessage[]
  */
 export function loadHistory(scenario: string): ChatMessage[] {
   try {
@@ -24,8 +24,8 @@ export function loadHistory(scenario: string): ChatMessage[] {
 
 /**
  * Save chat history for a given scenario.
- * @param {string} scenario
- * @param {ChatMessage[]} messages
+ * @param scenario
+ * @param messages
  */
 export function saveHistory(scenario: string, messages: ChatMessage[]): void {
   try {
