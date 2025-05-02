@@ -1,32 +1,34 @@
-// hooks/useHydratedState.js
-import { useState, useEffect } from "react";
+// hooks/useHydratedState.ts
+import { useState, useEffect, Dispatch, SetStateAction } from "react";
 
-export default function useHydratedState(key, initialValue) {
-  // Start with initialValue on both server and first render
-  const [state, setState] = useState(initialValue);
+export default function useHydratedState<T>(
+  key: string,
+  initialValue: T
+): [T, Dispatch<SetStateAction<T>>] {
+  const [state, setState] = useState<T>(initialValue);
 
-  // After mount, read from localStorage once
+  // On mount, load from localStorage if available
   useEffect(() => {
     if (typeof window === "undefined") return;
-    try {
-      const stored = window.localStorage.getItem(key);
-      if (stored !== null) {
-        setState(JSON.parse(stored));
+    const stored = localStorage.getItem(key);
+    if (stored !== null) {
+      try {
+        setState(JSON.parse(stored) as T);
+      } catch {
+        // ignore parse errors
       }
-    } catch (err) {
-      console.warn(`useHydratedState: failed to parse "${key}" from localStorage`, err);
     }
   }, [key]);
 
-  // Persist back whenever state changes
+  // Whenever state changes, persist to localStorage
   useEffect(() => {
     if (typeof window === "undefined") return;
     try {
-      window.localStorage.setItem(key, JSON.stringify(state));
-    } catch (err) {
-      console.warn(`useHydratedState: failed to serialize "${key}" to localStorage`, err);
+      localStorage.setItem(key, JSON.stringify(state));
+    } catch {
+      // ignore write errors
     }
   }, [key, state]);
 
-  return state;
+  return [state, setState];
 }
