@@ -1,24 +1,13 @@
 // utils/fetchWithTimeout.js
-
-/**
- * Perform a fetch but abort if it takes longer than `timeout` ms.
- * Returns the fetch Response or throws on timeout/network error.
- */
-export default async function fetchWithTimeout(
-  url,
-  options = {},
-  timeout = 15_000
-) {
+export default async function fetchWithTimeout(url, options = {}, ms = 10000) {
   const controller = new AbortController();
-  const id = setTimeout(() => controller.abort(), timeout);
-
+  const id = setTimeout(() => controller.abort(), ms);
   try {
-    const response = await fetch(url, {
-      ...options,
-      signal: controller.signal
-    });
-    return response;
-  } finally {
+    const response = await fetch(url, { ...options, signal: controller.signal });
     clearTimeout(id);
+    return response;
+  } catch (err) {
+    clearTimeout(id);
+    throw err;
   }
 }
