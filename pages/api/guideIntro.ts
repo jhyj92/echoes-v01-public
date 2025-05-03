@@ -1,5 +1,3 @@
-// /pages/api/guideIntro.ts
-
 import type { NextApiRequest, NextApiResponse } from "next";
 import { GoogleGenAI } from "@google/genai";
 import dotenv from "dotenv";
@@ -43,11 +41,13 @@ export default async function handler(
     return res.status(400).json({ error: "Missing or invalid idx, domain, or reflections" });
   }
 
-  // Construct prompt with previous reflections and current question index
+  // Sanitize reflections
+  const safeReflections = reflections.map((s: string) => s.replace(/[\r\n]+/g, " ").trim());
+
   const prompt = `
 You are Echoes, a poetic guide. The user selected domain "${domain}" - a hidden strength.
 Based on their previous reflections (${idx} so far):
-${reflections.join(" | ")}
+${safeReflections.join(" | ")}
 
 Ask reflection question ${idx + 1}/10 that explores the essence of this domain.
 Return only the next question without any meta commentary or extra text.
@@ -63,8 +63,8 @@ Return only the next question without any meta commentary or extra text.
     if (resp && resp.text) {
       return res.status(200).json({ question: resp.text.trim() });
     }
-  } catch {
-    // fallthrough to OpenRouter
+  } catch (error) {
+    console.error("Gemini API error:", error);
   }
 
   // 2️⃣ OpenRouter fallback
@@ -100,8 +100,8 @@ Return only the next question without any meta commentary or extra text.
       if (question) {
         return res.status(200).json({ question });
       }
-    } catch {
-      // failover
+    } catch (error) {
+      console.error("OpenRouter fallback error:", error);
     }
   }
 
