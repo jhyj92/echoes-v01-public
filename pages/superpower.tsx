@@ -1,10 +1,8 @@
-// pages/superpower.tsx
 "use client";
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/router";
 import LatencyOverlay from "@/components/LatencyOverlay";
-import ReflectionLetter from "@/components/ReflectionLetter";
 
 export default function SuperpowerPage() {
   const router = useRouter();
@@ -14,8 +12,10 @@ export default function SuperpowerPage() {
   const [description, setDescription] = useState<string>("");
 
   useEffect(() => {
-    setDomain(localStorage.getItem("echoes_domain") || "");
-    setAnswers(JSON.parse(localStorage.getItem("echoes_guide") || "[]"));
+    const savedDomain = localStorage.getItem("echoes_domain") || "";
+    const savedAnswers = localStorage.getItem("echoes_guide");
+    setDomain(savedDomain);
+    setAnswers(savedAnswers ? JSON.parse(savedAnswers) : []);
   }, []);
 
   useEffect(() => {
@@ -41,17 +41,9 @@ export default function SuperpowerPage() {
   }, [superpower, router]);
 
   return (
-    <main className="min-h-screen flex flex-col items-center justify-center px-6 py-12 bg-black text-gold">
+    <main className="min-h-screen flex flex-col items-center justify-center px-6 py-12 bg-black text-gold text-center space-y-6">
       <LatencyOverlay />
-      {!superpower ? (
-        <p>Weaving your superpower...</p>
-      ) : (
-        <div className="prose prose-invert">
-          <h1>Your Superpower</h1>
-          <h2 className="text-2xl font-serif">{superpower}</h2>
-          <p>{description}</p>
-        </div>
-      )}
+      <p>Weaving your superpower...</p>
     </main>
   );
 }
