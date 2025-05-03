@@ -48,9 +48,9 @@ export default function Home() {
   if (isLoading) return null;
 
   return (
-    <main className="relative min-h-screen w-full bg-black text-white overflow-hidden">
+    <main className="relative flex flex-col items-center justify-center min-h-screen w-full bg-black text-white overflow-hidden">
       <Starfield />
-      <div className="absolute inset-0 flex flex-col items-center justify-center text-center px-4 z-10">
+      <div className="z-10 flex flex-col items-center text-center px-4">
         <h1 className="text-5xl md:text-6xl font-serif mb-6 fade-in">
           Echoes
         </h1>
