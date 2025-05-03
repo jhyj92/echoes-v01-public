@@ -1,3 +1,4 @@
+// pages/index.tsx
 "use client";
 
 import { useEffect, useState } from "react";
@@ -47,12 +48,14 @@ export default function Home() {
   if (isLoading) return null;
 
   return (
-    <main className="flex flex-col items-center justify-center min-h-screen w-full bg-black text-white px-4 relative overflow-hidden">
+    <main className="flex-1 flex flex-col items-center justify-center w-full bg-black text-white px-4 relative overflow-hidden">
       <Starfield />
       <h1 className="text-5xl md:text-6xl font-serif mb-6 fade-in z-10">
         Echoes
       </h1>
-      <p className="text-xl mb-8 fade-in z-10">{landingTaglines[taglineIndex]}</p>
+      <p className="text-xl mb-8 fade-in z-10">
+        {landingTaglines[taglineIndex]}
+      </p>
       <div className="flex flex-col sm:flex-row space-y-4 sm:space-y-0 sm:space-x-4 fade-in z-10">
         {hasExistingJourney && journeyDestination && (
           <button
