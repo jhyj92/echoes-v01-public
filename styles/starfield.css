@@ -1,0 +1,19 @@
+.starfield {
+  position: absolute;
+  width: 200%;
+  height: 200%;
+  background: transparent;
+  background-image: radial-gradient(white 1px, transparent 1px);
+  background-size: 50px 50px;
+  animation: starMove 60s linear infinite;
+  z-index: 0;
+}
+
+@keyframes starMove {
+  0% {
+    transform: translate3d(0px, 0px, 0px);
+  }
+  100% {
+    transform: translate3d(-25%, -25%, 0px);
+  }
+}
