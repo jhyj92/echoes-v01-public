@@ -11,16 +11,19 @@ export default function HeroPage() {
   const [scenario, setScenario] = useState<string | null>(null);
 
   useEffect(() => {
-    if (typeof window === "undefined") return;
-    const stored = localStorage.getItem("echoes_scenario");
-    if (!stored) {
-      router.replace("/guide");
-    } else {
-      setScenario(stored);
-    }
-  }, [router]);
+    if (!router.isReady) return;
 
-  if (!scenario) {
+    const storedScenario = localStorage.getItem("echoes_scenario");
+
+    if (!storedScenario) {
+      router.replace("/guide");
+      return;
+    }
+
+    setScenario(storedScenario);
+  }, [router.isReady]);
+
+  if (!router.isReady || !scenario) {
     return (
       <main className="min-h-screen flex flex-col items-center justify-center px-6 py-12 bg-black text-gold">
         <LatencyOverlay />
