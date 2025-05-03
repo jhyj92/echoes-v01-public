@@ -3,24 +3,20 @@
 
 import React from "react";
 
-interface ReflectionLetterProps {
+interface Props {
   letter: string;
   onContinue: () => void;
 }
 
-export default function ReflectionLetter({
-  letter,
-  onContinue,
-}: ReflectionLetterProps) {
+export default function ReflectionLetter({ letter, onContinue }: Props) {
   return (
-    <div className="p-8 max-w-xl mx-auto prose prose-invert">
-      <h2>Letter from the Hero</h2>
+    <div className="max-w-xl p-6 space-y-6 text-lg bg-black bg-opacity-80 text-gold border border-gold rounded-lg">
       <p>{letter}</p>
       <button
-        className="btn-primary mt-6"
         onClick={onContinue}
+        className="mt-6 px-4 py-2 border border-gold text-gold hover:bg-gold hover:text-black transition"
       >
-        Continue Your Journey
+        Continue
       </button>
     </div>
   );
