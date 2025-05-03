@@ -12,6 +12,7 @@ export default function DomainsPage() {
   const [answers, setAnswers] = useState<string[] | null>(null);
   const [domains, setDomains] = useState<string[] | null>(null);
   const [loading, setLoading] = useState<boolean>(false);
+  const [error, setError] = useState<string | null>(null);
 
   // 1️⃣ Load answers from localStorage or redirect
   useEffect(() => {
@@ -28,6 +29,7 @@ export default function DomainsPage() {
   useEffect(() => {
     if (!answers) return;
     setLoading(true);
+    setError(null);
     (async () => {
       try {
         const res = await fetch("/api/domains", {
@@ -35,9 +37,14 @@ export default function DomainsPage() {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ answers }),
         });
+        if (!res.ok) throw new Error(`API error: ${res.status}`);
         const { suggestions } = await res.json();
+        if (!suggestions || !Array.isArray(suggestions) || suggestions.length === 0) {
+          throw new Error("No domains returned.");
+        }
         setDomains(suggestions);
-      } catch {
+      } catch (err) {
+        setError("Failed to load domains. Please try again.");
         setDomains([
           "Curiosity",
           "Courage",
@@ -51,7 +58,7 @@ export default function DomainsPage() {
     })();
   }, [answers]);
 
-  // While waiting for domains, show nothing or overlay
+  // While waiting for domains, show overlay
   if (domains === null) {
     return (
       <main className="relative flex items-center justify-center min-h-screen bg-black text-gold">
@@ -71,9 +78,9 @@ export default function DomainsPage() {
       <LatencyOverlay />
       <Starfield />
       <h1 className="text-4xl font-serif mb-6">Discover Your Domain</h1>
-      {loading ? (
-        <p className="italic">The echoes are thinking…</p>
-      ) : (
+      {loading && <p className="italic">The echoes are thinking…</p>}
+      {error && <p className="text-red-500 italic mb-4" role="alert">{error}</p>}
+      {!loading && (
         <DomainSelector domains={domains} onSelect={handlePick} />
       )}
     </main>
