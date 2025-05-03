@@ -1,4 +1,4 @@
-// pages/api/heroChat.ts
+// /pages/api/heroChat.ts
 import type { NextApiRequest, NextApiResponse } from "next";
 import { GoogleGenAI } from "@google/genai";
 import dotenv from "dotenv";
@@ -32,13 +32,15 @@ export default async function handler(
   res: NextApiResponse
 ) {
   if (req.method !== "POST") return res.status(405).end();
+
   const { scenario, history, userMessage } = req.body;
+
   if (
     typeof scenario !== "string" ||
     !Array.isArray(history) ||
     typeof userMessage !== "string"
   ) {
-    return res.status(400).json({ error: "Missing scenario/history/message" });
+    return res.status(400).json({ error: "Missing or invalid scenario/history/userMessage" });
   }
 
   // Build chat messages
@@ -51,19 +53,24 @@ export default async function handler(
     { role: "user", content: userMessage },
   ];
 
-  // Gemini primary
+  // Attempt Gemini first
   try {
     const resp = await gemini.models.generateContent({
       model: "gemini-2.5-flash-preview-04-17",
       contents: [messages.map((m) => m.content).join("\n")],
     });
-    if (!resp || !resp.text) {
-      return res.status(500).json({ error: 'Invalid response structure.' });
-    }
-    return res.status(200).json({ reply: resp.text.trim() });
-  } catch {}
 
-  // OpenRouter fallback
+    if (resp?.text?.trim()) {
+      return res.status(200).json({
+        reply: resp.text.trim(),
+        done: history.length + 1 >= 10,
+      });
+    }
+  } catch (err) {
+    // Gemini failed -> continue to fallback
+  }
+
+  // Fallback to OpenRouter
   for (let i = 0; i < OR_KEYS.length; i++) {
     try {
       const body = {
@@ -71,6 +78,7 @@ export default async function handler(
         messages,
         temperature: 0.8,
       };
+
       const r = await fetchWithTimeout(
         "https://openrouter.ai/api/v1/chat/completions",
         {
@@ -83,11 +91,25 @@ export default async function handler(
         },
         10000
       );
+
       if (!r.ok) continue;
+
       const { choices } = await r.json();
-      return res.status(200).json({ reply: choices[0].message.content.trim() });
-    } catch {}
+
+      if (choices?.[0]?.message?.content?.trim()) {
+        return res.status(200).json({
+          reply: choices[0].message.content.trim(),
+          done: history.length + 1 >= 10,
+        });
+      }
+    } catch {
+      // Ignore and continue to next fallback
+    }
   }
 
-  res.status(200).json({ reply: "…" });
+  // If all fails
+  return res.status(200).json({
+    reply: "The echoes are silent…",
+    done: false,
+  });
 }
