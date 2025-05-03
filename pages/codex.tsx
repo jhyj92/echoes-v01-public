@@ -12,7 +12,6 @@ export default function CodexPage() {
 
     const stored: string[] = JSON.parse(localStorage.getItem("echoes_codex") || "[]");
 
-    // FIX: Map stored strings into valid CodexEntry format
     const entries: CodexEntry[] = stored.map((str, index) => ({
       id: `flat-${index}`,
       label: str,
