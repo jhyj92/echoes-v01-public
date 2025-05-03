@@ -14,11 +14,13 @@ export default function Interviewer({ onComplete }: Props) {
   const [answer, setAnswer] = useState("");
   const [answers, setAnswers] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  // Ask first question on mount
+  // Ask first question on mount and when qIdx changes
   useEffect(() => {
     askNext();
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [qIdx]);
 
   /* ---- Helpers --------------------------------------------------------- */
   const hueShift = () => {
@@ -39,15 +41,19 @@ export default function Interviewer({ onComplete }: Props) {
   /* ---- Fetch Next Question --------------------------------------------- */
   async function askNext() {
     setLoading(true);
+    setError(null);
     try {
       const res = await fetchWithTimeout("/api/interviewer", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ idx: qIdx, answers }),
       });
+      if (!res.ok) throw new Error(`API error: ${res.status}`);
       const data = await res.json();
       setQuestion(stripMeta(data.question || ""));
-    } catch {
+    } catch (err) {
+      console.error("Failed to fetch question:", err);
+      setError("Failed to load question. Please try again.");
       setQuestion("…");
     } finally {
       setLoading(false);
@@ -57,7 +63,7 @@ export default function Interviewer({ onComplete }: Props) {
   /* ---- Handle Submission ---------------------------------------------- */
   const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    if (!answer.trim()) return;
+    if (!answer.trim() || loading) return;
 
     const updated = [...answers, answer.trim()];
     setAnswers(updated);
@@ -69,7 +75,6 @@ export default function Interviewer({ onComplete }: Props) {
       onComplete(updated);
     } else {
       setQIdx(qIdx + 1);
-      askNext();
     }
   };
 
@@ -79,6 +84,11 @@ export default function Interviewer({ onComplete }: Props) {
   return (
     <section className="w-full max-w-3xl space-y-6 text-gold">
       {loading && <LatencyOverlay />}
+      {error && (
+        <p className="text-red-500 italic mb-2" role="alert">
+          {error}
+        </p>
+      )}
 
       <div
         dangerouslySetInnerHTML={{
@@ -94,6 +104,8 @@ export default function Interviewer({ onComplete }: Props) {
           placeholder="Type your answer and press ↵"
           className="w-full rounded bg-transparent border border-gold/40 px-3 py-2 focus:outline-none"
           autoFocus
+          disabled={loading}
+          aria-label={`Answer to question ${qIdx + 1}`}
         />
       </form>
     </section>
