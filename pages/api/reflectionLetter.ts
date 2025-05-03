@@ -1,4 +1,3 @@
-// /pages/api/reflectionLetter.ts
 import type { NextApiRequest, NextApiResponse } from "next";
 import { GoogleGenAI } from "@google/genai";
 import dotenv from "dotenv";
@@ -33,45 +32,41 @@ export default async function handler(
 ) {
   if (req.method !== "POST") return res.status(405).end();
 
-  const { history, superpower } = req.body;
-
-  if (!Array.isArray(history) || !superpower || typeof superpower !== "string") {
-    return res.status(400).json({ error: "Missing or invalid history or superpower." });
+  const { scenario, history } = req.body;
+  if (typeof scenario !== "string" || !Array.isArray(history)) {
+    return res.status(400).json({ error: "Missing scenario or history" });
   }
 
-  const dialogue = history
-    .map((h: any) => `${h.from === "hero" ? "Hero" : "You"}: ${h.text}`)
-    .join("\n");
+  const prompt = `
+Write a heartfelt letter from the hero in scenario "${scenario}", reflecting
+on the user's superpower as shown in these messages:
+${history.map((m: any) => `${m.from}: ${m.text}`).join("\n")}
+  `.trim();
 
-  const messages = [
-    { role: "system", content: `Superpower: ${superpower}` },
-    {
-      role: "user",
-      content: `The journey so far:\n\n${dialogue}\n\nWrite a reflective letter from the hero to the user about their journey and their superpower.`,
-    },
-  ];
-
-  // Try Gemini first
+  // 1️⃣ Gemini primary
   try {
     const resp = await gemini.models.generateContent({
       model: "gemini-2.5-flash-preview-04-17",
-      contents: [messages.map((m) => m.content).join("\n")],
+      contents: [prompt],
     });
 
     if (resp?.text?.trim()) {
       return res.status(200).json({ letter: resp.text.trim() });
     }
   } catch {
-    // Gemini failed → fallback
+    // Fall through
   }
 
-  // Fallback OpenRouter
+  // 2️⃣ OpenRouter fallback
   for (let i = 0; i < OR_KEYS.length; i++) {
     try {
       const body = {
         model: "deepseek/deepseek-chat-v3-0324:free",
-        messages,
-        temperature: 0.7,
+        messages: [
+          { role: "system", content: "You are a poetic letter writer." },
+          { role: "user", content: prompt },
+        ],
+        temperature: 0.8,
       };
 
       const r = await fetchWithTimeout(
@@ -90,19 +85,12 @@ export default async function handler(
       if (!r.ok) continue;
 
       const { choices } = await r.json();
-      const reply = choices?.[0]?.message?.content?.trim();
-
-      if (reply) {
-        return res.status(200).json({ letter: reply });
-      }
+      return res.status(200).json({ letter: choices[0].message.content.trim() });
     } catch {
-      // Ignore and continue fallback
+      // continue
     }
   }
 
-  // Total failure fallback
-  return res.status(200).json({
-    letter:
-      "Dear wanderer,\n\nThough the path was fraught with silence, your resolve never wavered. In you, the hero sees the quiet strength that shapes worlds unseen. Until our paths cross again — carry your superpower with grace.\n\n— The Hero",
-  });
+  // 3️⃣ Hard fallback
+  res.status(200).json({ letter: "Your courage has illuminated every step…" });
 }
