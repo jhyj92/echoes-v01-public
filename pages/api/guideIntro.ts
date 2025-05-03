@@ -39,14 +39,18 @@ export default async function handler(
 
   const { idx, domain, reflections } = req.body;
 
-  if (typeof domain !== "string") {
-    return res.status(400).json({ error: "Missing domain" });
+  if (typeof idx !== "number" || typeof domain !== "string" || !Array.isArray(reflections)) {
+    return res.status(400).json({ error: "Missing or invalid idx, domain, or reflections" });
   }
 
-  // For Option 2, just return a single question string
+  // Construct prompt with previous reflections and current question index
   const prompt = `
-You are Echoes, a poetic guide. The user selected domain "${domain}"-a hidden
-strength. Ask a single reflection question that explores the essence of this domain. Return only the question.
+You are Echoes, a poetic guide. The user selected domain "${domain}" - a hidden strength.
+Based on their previous reflections (${idx} so far):
+${reflections.join(" | ")}
+
+Ask reflection question ${idx + 1}/10 that explores the essence of this domain.
+Return only the next question without any meta commentary or extra text.
   `.trim();
 
   // 1️⃣ Gemini primary
@@ -102,7 +106,5 @@ strength. Ask a single reflection question that explores the essence of this dom
   }
 
   // 3️⃣ Hardcoded final fallback
-  res
-    .status(200)
-    .json({ question: "Reflect on a moment you felt truly aligned." });
+  res.status(200).json({ question: "Reflect on a moment you felt truly aligned." });
 }
