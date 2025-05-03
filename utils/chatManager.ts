@@ -13,6 +13,8 @@ const HISTORY_KEY_PREFIX = "echoes_history_";
  * @returns ChatMessage[]
  */
 export function loadHistory(scenario: string): ChatMessage[] {
+  if (typeof window === "undefined") return [];
+
   try {
     const key = HISTORY_KEY_PREFIX + scenario;
     const raw = JSON.parse(localStorage.getItem(key) || "[]");
@@ -28,6 +30,8 @@ export function loadHistory(scenario: string): ChatMessage[] {
  * @param messages
  */
 export function saveHistory(scenario: string, messages: ChatMessage[]): void {
+  if (typeof window === "undefined") return;
+
   try {
     const key = HISTORY_KEY_PREFIX + scenario;
     localStorage.setItem(key, JSON.stringify(messages));
