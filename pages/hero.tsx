@@ -1,4 +1,3 @@
-// pages/hero.tsx
 "use client";
 
 import { useEffect, useState } from "react";
@@ -13,15 +12,22 @@ export default function HeroPage() {
 
   useEffect(() => {
     if (typeof window === "undefined") return;
-    const s = localStorage.getItem("echoes_scenario");
-    if (!s) {
+    const stored = localStorage.getItem("echoes_scenario");
+    if (!stored) {
       router.replace("/guide");
     } else {
-      setScenario(s);
+      setScenario(stored);
     }
   }, [router]);
 
-  if (!scenario) return null;
+  if (!scenario) {
+    return (
+      <main className="min-h-screen flex flex-col items-center justify-center px-6 py-12 bg-black text-gold">
+        <LatencyOverlay />
+        <p className="italic mt-4">The echoes are aligning your path…</p>
+      </main>
+    );
+  }
 
   return (
     <main className="min-h-screen flex flex-col items-center justify-center px-6 py-12 bg-black text-gold">
