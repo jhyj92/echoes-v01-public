@@ -12,7 +12,7 @@ export default function ReflectionPage() {
   useEffect(() => {
     const history = localStorage.getItem("echoes_history");
     const superpower = localStorage.getItem("echoes_superpower");
-    const scenario = localStorage.getItem("echoes_scenario"); // Added scenario retrieval
+    const scenario = localStorage.getItem("echoes_scenario");
 
     if (!history || !superpower || !scenario) {
       router.replace("/hero");
@@ -26,13 +26,19 @@ export default function ReflectionPage() {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             history: JSON.parse(history),
-            scenario, // Pass scenario here
+            scenario,
           }),
         });
 
         if (!res.ok) throw new Error("Failed to fetch reflection letter");
         const data = await res.json();
         setLetter(data.letter);
+
+        // Optionally, update the Codex here (flat or tree)
+        // Example for flat:
+        const codex = JSON.parse(localStorage.getItem("echoes_codex") || "[]");
+        codex.push(data.letter);
+        localStorage.setItem("echoes_codex", JSON.stringify(codex));
       } catch (err) {
         console.error(err);
         setLetter("A letter could not be generated at this time.");
