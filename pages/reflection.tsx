@@ -1,8 +1,10 @@
+// /pages/reflection.tsx
+
 import { useEffect, useState } from "react";
 import { useRouter } from "next/router";
-import Starfield from "@/components/Starfield";
-import LatencyOverlay from "@/components/LatencyOverlay";
-import ReflectionLetter from "@/components/ReflectionLetter";
+import LatencyOverlay from "../components/LatencyOverlay";
+import Starfield from "../components/Starfield";
+import ReflectionLetter from "../components/ReflectionLetter";
 
 export default function ReflectionPage() {
   const router = useRouter();
@@ -14,26 +16,38 @@ export default function ReflectionPage() {
     const superpower = localStorage.getItem("echoes_superpower");
 
     if (!history || !superpower) {
-      router.push("/");
+      router.replace("/hero");
       return;
     }
 
-    fetch("/api/reflectionLetter", {
-      method: "POST",
-      body: JSON.stringify({
-        history: JSON.parse(history),
-        superpower,
-      }),
-    })
-      .then((res) => res.json())
-      .then((data) => {
-        setLetter(data?.letter || "");
+    const fetchLetter = async () => {
+      try {
+        const res = await fetch("/api/reflectionLetter", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            history: JSON.parse(history),
+            superpower,
+          }),
+        });
+
+        if (!res.ok) throw new Error("Failed to fetch reflection letter");
+        const data = await res.json();
+        setLetter(data.letter);
+      } catch (err) {
+        console.error(err);
+        setLetter("A letter could not be generated at this time.");
+      } finally {
         setLoading(false);
-      });
-  }, []);
+      }
+    };
+
+    fetchLetter();
+  }, [router]);
 
   const handleContinue = () => {
-    router.push("/hero");
+    localStorage.removeItem("echoes_history");
+    router.replace("/hero");
   };
 
   return (
@@ -41,8 +55,10 @@ export default function ReflectionPage() {
       <LatencyOverlay />
       <Starfield />
 
-      {!loading && letter && (
-        <ReflectionLetter letter={letter} onContinue={handleContinue} />
+      {loading ? (
+        <p className="text-xl animate-fade-in">The echoes are composing your reflection…</p>
+      ) : (
+        <ReflectionLetter letter={letter ?? ""} onContinue={handleContinue} />
       )}
     </main>
   );
