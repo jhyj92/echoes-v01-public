@@ -1,7 +1,7 @@
 // data/worlds.js
 
 // v0.3 spec worlds with consistent kebab-case IDs & theme classes
-export const WORLDS = [
+const worlds = [
   {
     id: "dream-sea",
     name: "Dream-Sea Realm",
@@ -31,3 +31,5 @@ export const WORLDS = [
     softKeywords:   ["calm", "reflection", "nurture"],
   },
 ];
+
+export default worlds;
