@@ -43,14 +43,17 @@ export default async function handler(
     return res.status(400).json({ error: "Missing or invalid scenario/history/userMessage" });
   }
 
+  // Sanitize messages for prompt safety
+  const safeHistory = history.map((m: any) => ({
+    role: m.from === "hero" ? "assistant" : "user",
+    content: String(m.text).replace(/[\r\n]+/g, " ").trim(),
+  }));
+
   // Build chat messages
   const messages = [
     { role: "system", content: `Scenario: ${scenario}` },
-    ...history.map((m: any) => ({
-      role: m.from === "hero" ? "assistant" : "user",
-      content: m.text,
-    })),
-    { role: "user", content: userMessage },
+    ...safeHistory,
+    { role: "user", content: userMessage.replace(/[\r\n]+/g, " ").trim() },
   ];
 
   // Attempt Gemini first
@@ -67,6 +70,7 @@ export default async function handler(
       });
     }
   } catch (err) {
+    console.error("Gemini API error:", err);
     // Gemini failed -> continue to fallback
   }
 
@@ -102,7 +106,8 @@ export default async function handler(
           done: history.length + 1 >= 10,
         });
       }
-    } catch {
+    } catch (error) {
+      console.error("OpenRouter fallback error:", error);
       // Ignore and continue to next fallback
     }
   }
