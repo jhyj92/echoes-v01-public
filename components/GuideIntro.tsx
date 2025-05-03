@@ -13,13 +13,26 @@ export default function GuideIntro({ domain, onSelect }: GuideIntroProps) {
   const [idx, setIdx] = useState(0);
   const [question, setQuestion] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
-  const [answers, setAnswers] = useState<string[]>([]);
+  const [error, setError] = useState<string | null>(null);
+  const [answers, setAnswers] = useState<string[]>(() => {
+    // Optional: load from localStorage for persistence
+    if (typeof window !== "undefined") {
+      try {
+        const stored = localStorage.getItem("echoes_guide");
+        return stored ? JSON.parse(stored) : [];
+      } catch {
+        return [];
+      }
+    }
+    return [];
+  });
   const [input, setInput] = useState("");
 
   useEffect(() => {
     if (!domain) return;
 
     setLoading(true);
+    setError(null);
     fetchWithTimeout("/api/guideIntro", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -29,8 +42,10 @@ export default function GuideIntro({ domain, onSelect }: GuideIntroProps) {
       .then((data) => {
         setQuestion(data.question ?? "");
       })
-      .catch(() => {
-        setQuestion("The echoes are silent… Try again soon.");
+      .catch((err) => {
+        setError("The echoes are silent… Try again soon.");
+        setQuestion("");
+        console.error("GuideIntro API error:", err);
       })
       .finally(() => {
         setLoading(false);
@@ -39,14 +54,17 @@ export default function GuideIntro({ domain, onSelect }: GuideIntroProps) {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!input.trim()) return;
+    if (!input.trim() || loading) return;
 
     const updatedAnswers = [...answers, input.trim()];
     setAnswers(updatedAnswers);
     setInput("");
+    // Optional: persist to localStorage
+    if (typeof window !== "undefined") {
+      localStorage.setItem("echoes_guide", JSON.stringify(updatedAnswers));
+    }
 
     if (idx === 9) {
-      // Completed 10 questions
       onSelect(updatedAnswers);
     } else {
       setIdx(idx + 1);
@@ -70,7 +88,7 @@ export default function GuideIntro({ domain, onSelect }: GuideIntroProps) {
       <div className="mb-6 border-l-4 border-gold/40 pl-4 text-lg italic">
         {question}
       </div>
-
+      {error && <div className="text-red-500 italic mb-2">{error}</div>}
       <form onSubmit={handleSubmit}>
         <input
           type="text"
@@ -80,8 +98,13 @@ export default function GuideIntro({ domain, onSelect }: GuideIntroProps) {
           className="w-full rounded bg-transparent border border-gold/40 px-3 py-2 focus:outline-none"
           autoFocus
           aria-label="Your reflection"
+          disabled={loading}
         />
-        <button type="submit" className="btn-primary w-full py-3 mt-4">
+        <button
+          type="submit"
+          className="btn-primary w-full py-3 mt-4"
+          disabled={loading}
+        >
           {idx === 9 ? "Finish" : "Next"}
         </button>
       </form>
