@@ -52,9 +52,7 @@ export default function Home() {
       <h1 className="text-5xl md:text-6xl font-serif mb-6 fade-in z-10">
         Echoes
       </h1>
-
       <p className="text-xl mb-8 fade-in z-10">{landingTaglines[taglineIndex]}</p>
-
       <div className="flex flex-col sm:flex-row space-y-4 sm:space-y-0 sm:space-x-4 fade-in z-10">
         {hasExistingJourney && journeyDestination && (
           <button
@@ -64,14 +62,12 @@ export default function Home() {
             Continue Journey
           </button>
         )}
-
         <button
           onClick={() => router.push("/onboarding")}
           className={`${hasExistingJourney ? "btn-outline" : "btn-primary"}`}
         >
           {hasExistingJourney ? "New Journey" : "Start Journey"}
         </button>
-
         <button
           onClick={() => router.push("/codex")}
           className="btn-outline"
