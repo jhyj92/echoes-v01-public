@@ -1,24 +1,39 @@
-// components/WorldReveal.tsx
 "use client";
 
-export default function WorldReveal({ world }: { world: string }) {
-  const art = {
-    "Dream-Sea":      "/worlds/dreamsea.jpg",
-    Emberwake:        "/worlds/emberwake.jpg",
-    Stormlight:       "/worlds/stormlight.jpg",
-    Whispergrove:     "/worlds/whispergrove.jpg",
-  }[world] || "";
+import Image from "next/image";
+
+interface WorldRevealProps {
+  world: string;
+}
+
+const worldImages: Record<string, string> = {
+  "Dream-Sea": "/worlds/Dream-Sea.jpg",
+  Emberwake: "/worlds/Emberwake.jpg",
+  Stormlight: "/worlds/Stormlight.jpg",
+  Whispergrove: "/worlds/Whispergrove.jpg",
+};
+
+export default function WorldReveal({ world }: WorldRevealProps) {
+  const imgSrc = worldImages[world];
+
+  if (!imgSrc) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-screen bg-black text-gold">
+        <p className="italic">Unknown world…</p>
+      </div>
+    );
+  }
 
   return (
-    <div className="relative flex items-center justify-center min-h-screen text-center overflow-hidden">
-      <img
-        src={art}
-        alt=""  /* decorative */
-        className="absolute inset-0 w-full h-full object-cover z-[-10]"
+    <div className="flex flex-col items-center justify-center min-h-screen bg-black text-gold animate-fade-in">
+      <Image
+        src={imgSrc}
+        alt={world}
+        width={512}
+        height={512}
+        className="rounded-xl shadow-lg animate-pulse"
       />
-      <h1 className="text-5xl md:text-6xl font-serif text-gold drop-shadow-lg">
-        {world} Realm
-      </h1>
+      <h1 className="text-4xl mt-6 font-serif">{world}</h1>
     </div>
   );
 }
