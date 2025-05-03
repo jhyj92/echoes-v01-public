@@ -63,7 +63,7 @@ export default function DomainsPage() {
   // 3️⃣ Handle domain pick
   function handlePick(domain: string) {
     localStorage.setItem("echoes_domain", domain);
-    router.push("/guide-intro");
+    router.push("/guide");
   }
 
   return (
