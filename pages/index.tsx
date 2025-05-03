@@ -1,3 +1,5 @@
+"use client";
+
 import { useEffect, useState } from "react";
 import { useRouter } from "next/router";
 import Starfield from "../components/Starfield";
@@ -6,8 +8,9 @@ import landingTaglines from "../data/landingTaglines";
 export default function Home() {
   const router = useRouter();
   const [taglineIndex, setTaglineIndex] = useState(0);
+  const [isRedirecting, setIsRedirecting] = useState(true);
 
-  // Tagline rotation
+  // Rotate taglines
   useEffect(() => {
     const interval = setInterval(() => {
       setTaglineIndex((prevIndex) => (prevIndex + 1) % landingTaglines.length);
@@ -15,8 +18,10 @@ export default function Home() {
     return () => clearInterval(interval);
   }, []);
 
-  // Resume flow logic
+  // Check resume flow logic
   useEffect(() => {
+    if (!router.isReady) return;
+
     const answers = localStorage.getItem("echoes_answers");
     const domain = localStorage.getItem("echoes_domain");
     const superpower = localStorage.getItem("echoes_superpower");
@@ -27,8 +32,12 @@ export default function Home() {
       router.replace("/guide");
     } else if (answers && answers.trim() !== "") {
       router.replace("/domains");
+    } else {
+      setIsRedirecting(false);
     }
-  }, [router]);
+  }, [router.isReady]);
+
+  if (isRedirecting) return null;
 
   return (
     <main className="relative h-screen w-screen overflow-hidden bg-black text-white">
