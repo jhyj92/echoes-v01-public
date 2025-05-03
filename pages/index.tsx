@@ -48,18 +48,18 @@ export default function Home() {
   if (isLoading) return null;
 
   return (
-    <main className="relative h-screen w-screen overflow-hidden bg-black text-white">
+    <main className="relative min-h-screen w-full bg-black text-white overflow-hidden">
       <Starfield />
-      <div className="absolute inset-0 flex flex-col items-center justify-center text-center px-4">
-        <h1 className="text-5xl md:text-6xl font-serif mb-6 fade-in z-10">
+      <div className="absolute inset-0 flex flex-col items-center justify-center text-center px-4 z-10">
+        <h1 className="text-5xl md:text-6xl font-serif mb-6 fade-in">
           Echoes
         </h1>
 
-        <p className="text-xl mb-8 fade-in z-10">
+        <p className="text-xl mb-8 fade-in">
           {landingTaglines[taglineIndex]}
         </p>
 
-        <div className="flex flex-col sm:flex-row space-y-4 sm:space-y-0 sm:space-x-4 z-10 fade-in">
+        <div className="flex flex-col sm:flex-row space-y-4 sm:space-y-0 sm:space-x-4 fade-in">
           {hasExistingJourney && journeyDestination && (
             <button
               onClick={() => router.push(journeyDestination)}
