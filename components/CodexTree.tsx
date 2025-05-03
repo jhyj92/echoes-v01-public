@@ -1,30 +1,11 @@
-// components/CodexTree.tsx
 "use client";
 
-import React from "react";
+import { useState } from "react";
 
 export interface CodexEntry {
-  title: string;
+  id: string;
+  label: string;
   children?: CodexEntry[];
-}
-
-interface EntryProps {
-  node: CodexEntry;
-}
-
-function Entry({ node }: EntryProps) {
-  return (
-    <li className="mb-2">
-      <span className="font-serif text-gold">{node.title}</span>
-      {node.children && node.children.length > 0 && (
-        <ul className="ml-4 list-disc">
-          {node.children.map((child, idx) => (
-            <Entry key={idx} node={child} />
-          ))}
-        </ul>
-      )}
-    </li>
-  );
 }
 
 interface CodexTreeProps {
@@ -32,14 +13,50 @@ interface CodexTreeProps {
 }
 
 export default function CodexTree({ tree }: CodexTreeProps) {
+  const [expanded, setExpanded] = useState<Set<string>>(new Set());
+
+  const toggle = (id: string) => {
+    setExpanded((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) {
+        next.delete(id);
+      } else {
+        next.add(id);
+      }
+      return next;
+    });
+  };
+
+  const renderNode = (entry: CodexEntry) => {
+    const hasChildren = entry.children && entry.children.length > 0;
+    const isExpanded = expanded.has(entry.id);
+
+    return (
+      <li key={entry.id}>
+        <button
+          onClick={() => hasChildren && toggle(entry.id)}
+          className="text-left text-gold hover:text-white transition"
+        >
+          {hasChildren && (
+            <span className="mr-2">{isExpanded ? "▾" : "▸"}</span>
+          )}
+          {entry.label}
+        </button>
+
+        {hasChildren && isExpanded && (
+          <ul className="ml-6 mt-2 space-y-1">
+            {entry.children!.map(renderNode)}
+          </ul>
+        )}
+      </li>
+    );
+  };
+
+  if (!tree || tree.length === 0) {
+    return <p className="italic text-gold">No entries found in the Codex.</p>;
+  }
+
   return (
-    <div className="p-8 max-w-2xl mx-auto prose prose-invert">
-      <h2 className="font-serif text-2xl mb-4">Your Codex</h2>
-      <ul>
-        {tree.map((node, idx) => (
-          <Entry key={idx} node={node} />
-        ))}
-      </ul>
-    </div>
+    <ul className="space-y-2">{tree.map(renderNode)}</ul>
   );
 }
