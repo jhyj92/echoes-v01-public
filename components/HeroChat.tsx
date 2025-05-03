@@ -15,6 +15,7 @@ export default function HeroChat({ scenario }: HeroChatProps) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const stored: ChatMessage[] = loadHistory(scenario);
@@ -34,7 +35,7 @@ export default function HeroChat({ scenario }: HeroChatProps) {
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    if (!input.trim()) return;
+    if (!input.trim() || loading) return;
 
     const userMsg: ChatMessage = { from: "user", text: input.trim() };
     const updated = [...messages, userMsg];
@@ -42,6 +43,7 @@ export default function HeroChat({ scenario }: HeroChatProps) {
     saveHistory(scenario, updated);
     setInput("");
     setLoading(true);
+    setError(null);
 
     try {
       const res = await fetchWithTimeout("/api/heroChat", {
@@ -50,9 +52,10 @@ export default function HeroChat({ scenario }: HeroChatProps) {
         body: JSON.stringify({
           scenario,
           history: messages, // previous messages
-          userMessage: input.trim(), // current message
+          userMessage: userMsg.text, // current message
         }),
       });
+      if (!res.ok) throw new Error(`API error: ${res.status}`);
       const { reply, done } = await res.json();
       const heroMsg: ChatMessage = { from: "hero", text: reply };
       const withHero = [...updated, heroMsg];
@@ -60,7 +63,9 @@ export default function HeroChat({ scenario }: HeroChatProps) {
       saveHistory(scenario, withHero);
 
       if (done) router.push("/reflection");
-    } catch {
+    } catch (err) {
+      setError("Failed to get a response from the hero. Please try again.");
+      console.error("HeroChat API error:", err);
       const fallback: ChatMessage = {
         from: "hero",
         text: "The echoes have fallen silent… They’ll return any moment.",
@@ -105,6 +110,7 @@ export default function HeroChat({ scenario }: HeroChatProps) {
       </form>
 
       {loading && <p className="italic mt-2">The echoes are listening…</p>}
+      {error && <p className="text-red-500 italic mt-2">{error}</p>}
     </main>
   );
 }
