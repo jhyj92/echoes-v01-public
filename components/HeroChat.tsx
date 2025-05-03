@@ -93,6 +93,7 @@ export default function HeroChat({ scenario }: HeroChatProps) {
           placeholder="Respond to the hero…"
           className="flex-1 rounded bg-transparent border border-gold/40 px-3 py-2 focus:outline-none"
           autoFocus
+          aria-label="Your message"
         />
         <button type="submit" disabled={loading} className="btn-primary">
           Send
