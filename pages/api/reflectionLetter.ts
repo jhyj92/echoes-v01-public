@@ -37,10 +37,15 @@ export default async function handler(
     return res.status(400).json({ error: "Missing scenario or history" });
   }
 
+  // Sanitize history
+  const safeHistory = history.map((m: any) =>
+    `${m.from}: ${String(m.text).replace(/[\r\n]+/g, " ").trim()}`
+  );
+
   const prompt = `
 Write a heartfelt letter from the hero in scenario "${scenario}", reflecting
 on the user's superpower as shown in these messages:
-${history.map((m: any) => `${m.from}: ${m.text}`).join("\n")}
+${safeHistory.join("\n")}
   `.trim();
 
   // 1️⃣ Gemini primary
@@ -53,7 +58,8 @@ ${history.map((m: any) => `${m.from}: ${m.text}`).join("\n")}
     if (resp?.text?.trim()) {
       return res.status(200).json({ letter: resp.text.trim() });
     }
-  } catch {
+  } catch (error) {
+    console.error("Gemini API error:", error);
     // Fall through
   }
 
@@ -85,9 +91,11 @@ ${history.map((m: any) => `${m.from}: ${m.text}`).join("\n")}
       if (!r.ok) continue;
 
       const { choices } = await r.json();
-      return res.status(200).json({ letter: choices[0].message.content.trim() });
-    } catch {
-      // continue
+      if (choices?.[0]?.message?.content?.trim()) {
+        return res.status(200).json({ letter: choices[0].message.content.trim() });
+      }
+    } catch (error) {
+      console.error("OpenRouter fallback error:", error);
     }
   }
 
