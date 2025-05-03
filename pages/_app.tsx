@@ -11,10 +11,14 @@ export default function App({ Component, pageProps }: AppProps) {
     <>
       <Head>
         <title>Echoes</title>
-        <meta name="description" content="Discover your hidden superpower through poetic reflection." />
+        <meta
+          name="description"
+          content="Discover your hidden superpower through poetic reflection."
+        />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
       </Head>
-      <div className="bg-black text-gold min-h-screen">
+      {/* Flex container to center all pages */}
+      <div className="bg-black text-gold min-h-screen flex flex-col items-center justify-center">
         <Component {...pageProps} />
       </div>
     </>
