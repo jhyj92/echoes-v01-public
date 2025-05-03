@@ -35,10 +35,14 @@ export default function GuidePage() {
     }
   }, [router.isReady]);
 
-  const handleSelect = (selected: string) => {
+  // Now expects reflections array
+  const handleSelect = (reflections: string[]) => {
     try {
-      localStorage.setItem("echoes_scenario", selected);
-      setScenario(selected);
+      localStorage.setItem("echoes_guide", JSON.stringify(reflections));
+      // Here you could generate/select a scenario, for now just set a default or let user pick
+      const scenario = "A hero faces a challenge only your superpower can solve.";
+      localStorage.setItem("echoes_scenario", scenario);
+      setScenario(scenario);
     } catch (error) {
       console.error("Error saving to localStorage:", error);
     }
