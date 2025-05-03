@@ -9,6 +9,8 @@ const FLAT_KEY = "echoes_codex_flat";
 
 /** Load all flat Codex entries. */
 export function loadCodexFlat() {
+  if (typeof window === "undefined") return [];
+
   try {
     return JSON.parse(localStorage.getItem(FLAT_KEY) || "[]");
   } catch {
@@ -21,6 +23,8 @@ export function loadCodexFlat() {
  * @param {{ content: string }} param0
  */
 export function addCodexFlat({ content }) {
+  if (typeof window === "undefined") return;
+
   const list = loadCodexFlat();
   list.push({ content, ts: Date.now() });
   localStorage.setItem(FLAT_KEY, JSON.stringify(list));
@@ -32,6 +36,8 @@ const TREE_KEY = "echoes_codex_tree";
 
 /** Load the tree‐structured Codex. */
 export function loadCodexTree() {
+  if (typeof window === "undefined") return [];
+
   try {
     return JSON.parse(localStorage.getItem(TREE_KEY) || "[]");
   } catch {
@@ -45,6 +51,8 @@ export function loadCodexTree() {
  * @returns {Array} new root array
  */
 export function initCodexTree(superpower) {
+  if (typeof window === "undefined") return [];
+
   const root = { title: `Superpower • ${superpower}`, children: [] };
   localStorage.setItem(TREE_KEY, JSON.stringify([root]));
   return [root];
@@ -56,6 +64,8 @@ export function initCodexTree(superpower) {
  * @param {string} title  – new branch title
  */
 export function addCodexBranch(path = [], title) {
+  if (typeof window === "undefined") return;
+
   let tree = loadCodexTree();
   if (!tree.length) return;
 
