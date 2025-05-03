@@ -40,8 +40,11 @@ export default async function handler(
     return res.status(400).json({ error: "Missing answers" });
   }
 
+  // Sanitize answers to avoid prompt injection or formatting issues
+  const safeAnswers = answers.map((s: string) => s.replace(/[\r\n]+/g, " ").trim());
+
   const prompt = `
-Based on these 10 answers: ${answers.join(" | ")},
+Based on these 10 answers: ${safeAnswers.join(" | ")},
 suggest exactly five distinct, poetic "super-power domains"
 (e.g. "Weaver of Connections", "Silent Observer").
 Return just the list.
@@ -64,8 +67,12 @@ Return just the list.
       .filter(Boolean)
       .slice(0, 5);
 
-    return res.status(200).json({ suggestions: list });
-  } catch {}
+    if (list.length > 0) {
+      return res.status(200).json({ suggestions: list });
+    }
+  } catch (error) {
+    console.error("Gemini API error:", error);
+  }
 
   // 2️⃣ OpenRouter fallback
   for (let i = 0; i < OR_KEYS.length; i++) {
@@ -95,14 +102,18 @@ Return just the list.
       if (!r.ok) continue;
 
       const { choices } = await r.json();
-      const list = choices[0].message.content
-        .split(/[\r\n,]+/)
+      const list = choices?.[0]?.message?.content
+        ?.split(/[\r\n,]+/)
         .map((s: string) => s.trim())
         .filter(Boolean)
         .slice(0, 5);
 
-      return res.status(200).json({ suggestions: list });
-    } catch {}
+      if (list && list.length > 0) {
+        return res.status(200).json({ suggestions: list });
+      }
+    } catch (error) {
+      console.error("OpenRouter fallback error:", error);
+    }
   }
 
   // 3️⃣ Hard fallback
