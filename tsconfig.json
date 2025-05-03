@@ -15,16 +15,22 @@
     "isolatedModules": true,
     "esModuleInterop": true,
 
-    // ─── Path aliases for @/imports ────────────────────────────────
+    // ─── Path aliases ───────────────────────────────────────────────
     "baseUrl": ".",
     "paths": {
       "@/components/*": ["components/*"],
-      "@/utils/*":      ["utils/*"],
-      "@/hooks/*":      ["hooks/*"],
-      "@/data/*":       ["data/*"],
-      "@/styles/*":     ["styles/*"]
+      "@/utils/*": ["utils/*"],
+      "@/hooks/*": ["hooks/*"],
+      "@/data/*": ["data/*"],
+      "@/styles/*": ["styles/*"]
     }
   },
-  "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", "**/*.js", "**/*.jsx"],
+  "include": [
+    "next-env.d.ts",
+    "**/*.ts",
+    "**/*.tsx",
+    "**/*.js",
+    "**/*.jsx"
+  ],
   "exclude": ["node_modules"]
 }
