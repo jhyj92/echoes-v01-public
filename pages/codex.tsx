@@ -1,4 +1,3 @@
-// pages/codex.tsx
 "use client";
 
 import { useEffect, useState } from "react";
@@ -12,9 +11,14 @@ export default function CodexPage() {
     if (typeof window === "undefined") return;
 
     const stored: string[] = JSON.parse(localStorage.getItem("echoes_codex") || "[]");
-    const entries: CodexEntry[] = stored.map((str) => ({
-      title: str,
+
+    // FIX: Map stored strings into valid CodexEntry format
+    const entries: CodexEntry[] = stored.map((str, index) => ({
+      id: `flat-${index}`,
+      label: str,
+      children: [],
     }));
+
     setTree(entries);
   }, []);
 
