@@ -23,7 +23,6 @@ export default function Home() {
   useEffect(() => {
     if (!router.isReady) return;
 
-    // Check for existing journey, but do NOT redirect
     const answers = localStorage.getItem("echoes_answers");
     const domain = localStorage.getItem("echoes_domain");
     const superpower = localStorage.getItem("echoes_superpower");
@@ -48,41 +47,37 @@ export default function Home() {
   if (isLoading) return null;
 
   return (
-    <main className="relative flex flex-col items-center justify-center min-h-screen w-full bg-black text-white overflow-hidden">
+    <main className="flex flex-col items-center justify-center min-h-screen w-full bg-black text-white px-4 relative overflow-hidden">
       <Starfield />
-      <div className="z-10 flex flex-col items-center text-center px-4">
-        <h1 className="text-5xl md:text-6xl font-serif mb-6 fade-in">
-          Echoes
-        </h1>
+      <h1 className="text-5xl md:text-6xl font-serif mb-6 fade-in z-10">
+        Echoes
+      </h1>
 
-        <p className="text-xl mb-8 fade-in">
-          {landingTaglines[taglineIndex]}
-        </p>
+      <p className="text-xl mb-8 fade-in z-10">{landingTaglines[taglineIndex]}</p>
 
-        <div className="flex flex-col sm:flex-row space-y-4 sm:space-y-0 sm:space-x-4 fade-in">
-          {hasExistingJourney && journeyDestination && (
-            <button
-              onClick={() => router.push(journeyDestination)}
-              className="btn-primary"
-            >
-              Continue Journey
-            </button>
-          )}
-
+      <div className="flex flex-col sm:flex-row space-y-4 sm:space-y-0 sm:space-x-4 fade-in z-10">
+        {hasExistingJourney && journeyDestination && (
           <button
-            onClick={() => router.push("/onboarding")}
-            className={`${hasExistingJourney ? "btn-outline" : "btn-primary"}`}
+            onClick={() => router.push(journeyDestination)}
+            className="btn-primary"
           >
-            {hasExistingJourney ? "New Journey" : "Start Journey"}
+            Continue Journey
           </button>
+        )}
 
-          <button
-            onClick={() => router.push("/codex")}
-            className="btn-outline"
-          >
-            View Codex
-          </button>
-        </div>
+        <button
+          onClick={() => router.push("/onboarding")}
+          className={`${hasExistingJourney ? "btn-outline" : "btn-primary"}`}
+        >
+          {hasExistingJourney ? "New Journey" : "Start Journey"}
+        </button>
+
+        <button
+          onClick={() => router.push("/codex")}
+          className="btn-outline"
+        >
+          View Codex
+        </button>
       </div>
     </main>
   );
