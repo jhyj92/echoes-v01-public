@@ -1,5 +1,3 @@
-"use client";
-
 import { useEffect, useState } from "react";
 import { useRouter } from "next/router";
 import LatencyOverlay from "../components/LatencyOverlay";
@@ -11,31 +9,52 @@ export default function GuidePage() {
   const router = useRouter();
   const [domain, setDomain] = useState<string | null>(null);
   const [scenario, setScenario] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     if (!router.isReady) return;
 
-    const storedDomain = localStorage.getItem("echoes_domain");
-    const storedScenario = localStorage.getItem("echoes_scenario");
+    try {
+      const storedDomain = localStorage.getItem("echoes_domain");
+      const storedScenario = localStorage.getItem("echoes_scenario");
 
-    if (!storedDomain) {
-      router.replace("/domains");
-      return;
-    }
+      if (!storedDomain) {
+        router.replace("/domains");
+        return;
+      }
 
-    setDomain(storedDomain);
+      setDomain(storedDomain);
 
-    if (storedScenario) {
-      setScenario(storedScenario);
+      if (storedScenario) {
+        setScenario(storedScenario);
+      }
+    } catch (error) {
+      console.error("Error accessing localStorage:", error);
+    } finally {
+      setIsLoading(false);
     }
   }, [router.isReady]);
 
   const handleSelect = (selected: string) => {
-    localStorage.setItem("echoes_scenario", selected);
-    setScenario(selected);
+    try {
+      localStorage.setItem("echoes_scenario", selected);
+      setScenario(selected);
+    } catch (error) {
+      console.error("Error saving to localStorage:", error);
+    }
   };
 
-  if (!router.isReady || !domain) return null;
+  if (!router.isReady || isLoading) {
+    return (
+      <main className="relative flex flex-col items-center justify-center min-h-screen px-4 bg-black text-gold">
+        <LatencyOverlay />
+        <Starfield />
+        <div className="text-center">Loading your journey...</div>
+      </main>
+    );
+  }
+
+  if (!domain) return null;
 
   return (
     <main className="relative flex flex-col items-center justify-center min-h-screen px-4 bg-black text-gold">
