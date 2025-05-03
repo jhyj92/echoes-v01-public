@@ -1,4 +1,5 @@
 // /pages/guide.tsx
+"use client";
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/router";
@@ -9,45 +10,23 @@ import HeroChat from "../components/HeroChat";
 
 export default function GuidePage() {
   const router = useRouter();
+  const [domain, setDomain] = useState<string | null>(null);
   const [scenario, setScenario] = useState<string | null>(null);
-  const [scenarios, setScenarios] = useState<string[]>([]);
-  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const storedScenario = localStorage.getItem("echoes_scenario");
-    const domain = localStorage.getItem("echoes_domain");
+    const storedDomain = localStorage.getItem("echoes_domain");
 
-    if (!domain) {
+    if (!storedDomain) {
       router.replace("/domains");
       return;
     }
 
+    setDomain(storedDomain);
+
     if (storedScenario) {
       setScenario(storedScenario);
-      setLoading(false);
-      return;
     }
-
-    const fetchScenarios = async () => {
-      try {
-        const res = await fetch("/api/guideIntro", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ domain }),
-        });
-
-        if (!res.ok) throw new Error("Failed to fetch scenarios");
-        const data = await res.json();
-        setScenarios(data.scenarios || []);
-      } catch (err) {
-        console.error(err);
-        setScenarios(["A mysterious path appears...", "An unknown journey beckons..."]);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchScenarios();
   }, [router]);
 
   const handleSelect = (selected: string) => {
@@ -55,16 +34,18 @@ export default function GuidePage() {
     setScenario(selected);
   };
 
+  if (!domain) return null;
+
   return (
     <main className="relative flex flex-col items-center justify-center min-h-screen px-4 bg-black text-gold">
       <LatencyOverlay />
       <Starfield />
 
-      {!loading && !scenario && (
-        <GuideIntro scenarios={scenarios} onSelect={handleSelect} />
+      {!scenario && (
+        <GuideIntro domain={domain} onSelect={handleSelect} />
       )}
 
-      {!loading && scenario && (
+      {scenario && (
         <HeroChat scenario={scenario} />
       )}
     </main>
