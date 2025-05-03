@@ -1,4 +1,3 @@
-// pages/guide.tsx
 "use client";
 
 import { useEffect, useState } from "react";
@@ -16,8 +15,8 @@ export default function GuidePage() {
   useEffect(() => {
     if (!router.isReady) return;
 
-    const storedScenario = localStorage.getItem("echoes_scenario");
     const storedDomain = localStorage.getItem("echoes_domain");
+    const storedScenario = localStorage.getItem("echoes_scenario");
 
     if (!storedDomain) {
       router.replace("/domains");
@@ -36,7 +35,7 @@ export default function GuidePage() {
     setScenario(selected);
   };
 
-  if (!domain) return null;
+  if (!router.isReady || !domain) return null;
 
   return (
     <main className="relative flex flex-col items-center justify-center min-h-screen px-4 bg-black text-gold">
