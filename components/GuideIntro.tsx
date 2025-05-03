@@ -6,12 +6,15 @@ import LatencyOverlay from "@/components/LatencyOverlay";
 
 export interface GuideIntroProps {
   domain: string;
-  onSelect: (scenario: string) => void;
+  onSelect: (reflections: string[]) => void;
 }
 
 export default function GuideIntro({ domain, onSelect }: GuideIntroProps) {
+  const [idx, setIdx] = useState(0);
   const [question, setQuestion] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [answers, setAnswers] = useState<string[]>([]);
+  const [input, setInput] = useState("");
 
   useEffect(() => {
     if (!domain) return;
@@ -20,7 +23,7 @@ export default function GuideIntro({ domain, onSelect }: GuideIntroProps) {
     fetchWithTimeout("/api/guideIntro", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ domain }),
+      body: JSON.stringify({ domain, idx, reflections: answers }),
     })
       .then((res) => res.json())
       .then((data) => {
@@ -32,7 +35,23 @@ export default function GuideIntro({ domain, onSelect }: GuideIntroProps) {
       .finally(() => {
         setLoading(false);
       });
-  }, [domain]);
+  }, [domain, idx, answers]);
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!input.trim()) return;
+
+    const updatedAnswers = [...answers, input.trim()];
+    setAnswers(updatedAnswers);
+    setInput("");
+
+    if (idx === 9) {
+      // Completed 10 questions
+      onSelect(updatedAnswers);
+    } else {
+      setIdx(idx + 1);
+    }
+  };
 
   if (loading || !question) {
     return (
@@ -46,17 +65,26 @@ export default function GuideIntro({ domain, onSelect }: GuideIntroProps) {
   return (
     <section className="w-full max-w-xl space-y-6 text-gold">
       <h2 className="text-2xl font-serif mb-4">
-        Your Reflection Prompt
+        Reflection {idx + 1} of 10
       </h2>
       <div className="mb-6 border-l-4 border-gold/40 pl-4 text-lg italic">
         {question}
       </div>
-      <button
-        onClick={() => onSelect(question)}
-        className="btn-primary w-full py-3"
-      >
-        Begin
-      </button>
+
+      <form onSubmit={handleSubmit}>
+        <input
+          type="text"
+          value={input}
+          onChange={(e) => setInput(e.target.value)}
+          placeholder="Type your reflection here..."
+          className="w-full rounded bg-transparent border border-gold/40 px-3 py-2 focus:outline-none"
+          autoFocus
+          aria-label="Your reflection"
+        />
+        <button type="submit" className="btn-primary w-full py-3 mt-4">
+          {idx === 9 ? "Finish" : "Next"}
+        </button>
+      </form>
     </section>
   );
 }
