@@ -1,4 +1,4 @@
-// pages/api/superpower.ts
+// /pages/api/superpower.ts
 import type { NextApiRequest, NextApiResponse } from "next";
 import { GoogleGenAI } from "@google/genai";
 import dotenv from "dotenv";
@@ -32,40 +32,50 @@ export default async function handler(
   res: NextApiResponse
 ) {
   if (req.method !== "POST") return res.status(405).end();
-  const { domain, reflections } = req.body;
-  if (typeof domain !== "string" || !Array.isArray(reflections)) {
-    return res.status(400).json({ error: "Missing domain or reflections" });
+
+  const { domain, guideAnswers } = req.body;
+
+  if (typeof domain !== "string" || !Array.isArray(guideAnswers) || guideAnswers.length === 0) {
+    return res.status(400).json({ error: "Missing or invalid domain or guideAnswers." });
   }
 
-  const prompt = `
-Synthesize and name the user's precise superpower in one poetic phrase,
-based on these 10 reflections in domain "${domain}":
-${reflections.join(" | ")}.
-  `.trim();
+  const messages = [
+    { role: "system", content: `Domain: ${domain}` },
+    {
+      role: "user",
+      content: `Based on my journey through this domain, here are my reflections:\n\n${guideAnswers.join(
+        "\n"
+      )}\n\nPlease summarize my core superpower and describe it poetically in 1-2 sentences.`,
+    },
+  ];
 
-  // Gemini primary
+  // Try Gemini first
   try {
     const resp = await gemini.models.generateContent({
       model: "gemini-2.5-flash-preview-04-17",
-      contents: [prompt],
+      contents: [messages.map((m) => m.content).join("\n")],
     });
-    if (!resp || !resp.text) {
-      return res.status(500).json({ error: 'Invalid response structure.' });
-    }
-    return res.status(200).json({ superpower: resp.text.trim() });
-  } catch {}
 
-  // OpenRouter fallback
+    if (resp?.text?.trim()) {
+      const [superpowerLine, ...descLines] = resp.text.trim().split("\n");
+      return res.status(200).json({
+        superpower: superpowerLine.trim(),
+        description: descLines.join("\n").trim(),
+      });
+    }
+  } catch {
+    // Gemini failed -> fallback
+  }
+
+  // Fallback OpenRouter
   for (let i = 0; i < OR_KEYS.length; i++) {
     try {
       const body = {
         model: "deepseek/deepseek-chat-v3-0324:free",
-        messages: [
-          { role: "system", content: "You are a superpower synthesizer." },
-          { role: "user", content: prompt },
-        ],
-        temperature: 0.8,
+        messages,
+        temperature: 0.7,
       };
+
       const r = await fetchWithTimeout(
         "https://openrouter.ai/api/v1/chat/completions",
         {
@@ -78,15 +88,27 @@ ${reflections.join(" | ")}.
         },
         10000
       );
+
       if (!r.ok) continue;
+
       const { choices } = await r.json();
-      return res
-        .status(200)
-        .json({ superpower: choices[0].message.content.trim() });
-    } catch {}
+      const reply = choices?.[0]?.message?.content?.trim();
+
+      if (reply) {
+        const [superpowerLine, ...descLines] = reply.split("\n");
+        return res.status(200).json({
+          superpower: superpowerLine.trim(),
+          description: descLines.join("\n").trim(),
+        });
+      }
+    } catch {
+      // Ignore and continue fallback
+    }
   }
 
-  res
-    .status(200)
-    .json({ superpower: "The Whispering Architect" });
+  // If everything fails
+  return res.status(200).json({
+    superpower: "The Silent Echo",
+    description: "A mysterious and unspoken strength that only emerges when words fade.",
+  });
 }
