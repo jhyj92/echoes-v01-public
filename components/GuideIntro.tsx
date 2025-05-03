@@ -4,17 +4,18 @@ import { useEffect, useState } from "react";
 import fetchWithTimeout from "@/utils/fetchWithTimeout";
 import LatencyOverlay from "@/components/LatencyOverlay";
 
-interface Props {
+export interface GuideIntroProps {
   domain: string;
-  onPick(s: string): void;
+  onPick: (scenario: string) => void;
 }
 
-export default function GuideIntro({ domain, onPick }: Props) {
+export default function GuideIntro({ domain, onPick }: GuideIntroProps) {
   const [scenarios, setScenarios] = useState<string[] | null>(null);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     if (!domain) return;
+
     setLoading(true);
     fetchWithTimeout("/api/guideIntro", {
       method: "POST",
@@ -23,10 +24,14 @@ export default function GuideIntro({ domain, onPick }: Props) {
     })
       .then((res) => res.json())
       .then((data) => {
-        setScenarios(data.options || []);
-        setLoading(false);
+        setScenarios(data.options ?? []);
       })
-      .catch(() => setLoading(false));
+      .catch(() => {
+        setScenarios([]);
+      })
+      .finally(() => {
+        setLoading(false);
+      });
   }, [domain]);
 
   if (loading || !scenarios) {
@@ -43,14 +48,15 @@ export default function GuideIntro({ domain, onPick }: Props) {
       <h2 className="text-2xl font-serif mb-4">
         Select a scenario where your domain can shine:
       </h2>
+
       <ul className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        {scenarios.map((s, i) => (
-          <li key={i}>
+        {scenarios.map((scenario, index) => (
+          <li key={index}>
             <button
-              onClick={() => onPick(s)}
+              onClick={() => onPick(scenario)}
               className="btn-outline w-full text-left p-4"
             >
-              {s}
+              {scenario}
             </button>
           </li>
         ))}
