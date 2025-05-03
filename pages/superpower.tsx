@@ -10,6 +10,7 @@ export default function SuperpowerPage() {
   const [answers, setAnswers] = useState<string[]>([]);
   const [superpower, setSuperpower] = useState<string>("");
   const [description, setDescription] = useState<string>("");
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const savedDomain = localStorage.getItem("echoes_domain") || "";
@@ -25,13 +26,15 @@ export default function SuperpowerPage() {
           const res = await fetch("/api/superpower", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ domain, reflections: answers }), // <-- fixed key here
+            body: JSON.stringify({ domain, reflections: answers }),
           });
+          if (!res.ok) throw new Error("Failed to fetch superpower");
           const { superpower: sp, description: desc } = await res.json();
           setSuperpower(sp);
-          setDescription(desc);
+          setDescription(desc || "");
           localStorage.setItem("echoes_superpower", sp);
         } catch (error) {
+          setError("Failed to generate your superpower. Please try again.");
           console.error("Failed to fetch superpower:", error);
         }
       })();
@@ -48,6 +51,7 @@ export default function SuperpowerPage() {
     <main className="min-h-screen flex flex-col items-center justify-center px-6 py-12 bg-black text-gold text-center space-y-6">
       <LatencyOverlay />
       <p>Weaving your superpower...</p>
+      {error && <p className="text-red-500 italic mt-4">{error}</p>}
     </main>
   );
 }
