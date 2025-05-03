@@ -1,5 +1,3 @@
-// /pages/reflection.tsx
-
 import { useEffect, useState } from "react";
 import { useRouter } from "next/router";
 import LatencyOverlay from "../components/LatencyOverlay";
@@ -14,8 +12,9 @@ export default function ReflectionPage() {
   useEffect(() => {
     const history = localStorage.getItem("echoes_history");
     const superpower = localStorage.getItem("echoes_superpower");
+    const scenario = localStorage.getItem("echoes_scenario"); // Added scenario retrieval
 
-    if (!history || !superpower) {
+    if (!history || !superpower || !scenario) {
       router.replace("/hero");
       return;
     }
@@ -27,7 +26,7 @@ export default function ReflectionPage() {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             history: JSON.parse(history),
-            superpower,
+            scenario, // Pass scenario here
           }),
         });
 
