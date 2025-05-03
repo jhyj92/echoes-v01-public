@@ -1,19 +1,29 @@
-/* DomainSelector – shows list of 5 super-power domains */
-export interface Props {
+"use client";
+
+import React from "react";
+
+export interface DomainSelectorProps {
   domains: string[];
-  onSelect(domain: string): void;
+  onPick: (domain: string) => void;
 }
 
-export default function DomainSelector({ domains, onSelect }: Props) {
+export default function DomainSelector({ domains, onPick }: DomainSelectorProps) {
+  if (!domains.length) {
+    return (
+      <p className="text-gold italic mt-4">No domains available at the moment…</p>
+    );
+  }
+
   return (
-    <div className="grid gap-4 w-full max-w-md">
-      {domains.map((d) => (
+    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 w-full max-w-2xl mx-auto">
+      {domains.map((domain) => (
         <button
-          key={d}
-          onClick={() => onSelect(d)}
-          className="btn-outline hover:bg-gold/10 min-h-[56px]"
+          key={domain}
+          onClick={() => onPick(domain)}
+          className="border border-gold rounded px-6 py-3 text-gold hover:bg-gold hover:text-black transition"
+          aria-label={`Select domain ${domain}`}
         >
-          {d}
+          {domain}
         </button>
       ))}
     </div>
