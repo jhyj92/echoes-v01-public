@@ -7,7 +7,9 @@ dotenv.config();
 // OpenRouter key rotation
 const OR_KEYS = (process.env.OPENROUTER_KEYS || "")
   .split(",")
-  .map((k) => k.trim());
+  .map((k) => k.trim())
+  .filter(Boolean);
+
 let orIndex = 0;
 function nextOrKey() {
   const key = OR_KEYS[orIndex % OR_KEYS.length];
@@ -37,13 +39,18 @@ export default async function handler(
 
   const { idx, answers } = req.body;
   if (typeof idx !== "number" || !Array.isArray(answers)) {
-    return res.status(400).json({ error: "Missing idx or answers" });
+    return res.status(400).json({ error: "Missing or invalid idx or answers" });
   }
+
+  // Sanitize answers to avoid injection or formatting issues
+  const sanitizedAnswers = answers.map((a: string) =>
+    a.replace(/[\r\n]+/g, " ").trim()
+  );
 
   const prompt = `
 You are Echoes, a poetic interviewer designed to gently unveil a visitor's subtle,
 unique superpower. Ask question ${idx + 1}/10, building on previous answers:
-${answers.join(" | ")}. Return only the next open-ended question—no meta commentary.
+${sanitizedAnswers.join(" | ")}. Return only the next open-ended question-no meta commentary.
   `.trim();
 
   // 1️⃣ Gemini primary
@@ -56,7 +63,8 @@ ${answers.join(" | ")}. Return only the next open-ended question—no meta comme
     if (resp?.text?.trim()) {
       return res.status(200).json({ question: resp.text.trim() });
     }
-  } catch {
+  } catch (error) {
+    console.error("Gemini API error:", error);
     // fall through to OpenRouter
   }
 
@@ -88,9 +96,12 @@ ${answers.join(" | ")}. Return only the next open-ended question—no meta comme
       if (!r.ok) continue;
 
       const { choices } = await r.json();
-      return res.status(200).json({ question: choices[0].message.content.trim() });
-    } catch {
-      // continue
+      if (choices?.[0]?.message?.content?.trim()) {
+        return res.status(200).json({ question: choices[0].message.content.trim() });
+      }
+    } catch (error) {
+      console.error("OpenRouter fallback error:", error);
+      // continue to next key or fallback
     }
   }
 
