@@ -4,10 +4,10 @@ import React from "react";
 
 export interface DomainSelectorProps {
   domains: string[];
-  onPick: (domain: string) => void;
+  onSelect: (domain: string) => void;
 }
 
-export default function DomainSelector({ domains, onPick }: DomainSelectorProps) {
+export default function DomainSelector({ domains, onSelect }: DomainSelectorProps) {
   if (!domains.length) {
     return (
       <p className="text-gold italic mt-4">No domains available at the moment…</p>
@@ -19,7 +19,7 @@ export default function DomainSelector({ domains, onPick }: DomainSelectorProps)
       {domains.map((domain) => (
         <button
           key={domain}
-          onClick={() => onPick(domain)}
+          onClick={() => onSelect(domain)}
           className="border border-gold rounded px-6 py-3 text-gold hover:bg-gold hover:text-black transition"
           aria-label={`Select domain ${domain}`}
         >
