@@ -1,0 +1,35 @@
+```css
+:root {
+  --clr-gold: #d4af37;
+  --clr-bg: #000000;
+  --hue-shift: 0deg;
+}
+
+body {
+  background-color: var(--clr-bg);
+  color: var(--clr-gold);
+}
+
+.animate-fade-in {
+  opacity: 0;
+  animation: fadeIn 1s ease forwards;
+}
+
+.animate-fade-in.delay-500 {
+  animation-delay: 0.5s;
+}
+
+.animate-fade-in.delay-1000 {
+  animation-delay: 1s;
+}
+
+@keyframes fadeIn {
+  to {
+    opacity: 1;
+  }
+}
+
+.hue-rotate {
+  filter: hue-rotate(var(--hue-shift));
+  transition: filter 1s ease;
+}
