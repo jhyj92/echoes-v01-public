@@ -10,7 +10,7 @@ export interface GuideIntroProps {
 }
 
 export default function GuideIntro({ domain, onSelect }: GuideIntroProps) {
-  const [scenarios, setScenarios] = useState<string[] | null>(null);
+  const [question, setQuestion] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
@@ -24,17 +24,17 @@ export default function GuideIntro({ domain, onSelect }: GuideIntroProps) {
     })
       .then((res) => res.json())
       .then((data) => {
-        setScenarios(data.options ?? []);
+        setQuestion(data.question ?? "");
       })
       .catch(() => {
-        setScenarios([]);
+        setQuestion("The echoes are silent… Try again soon.");
       })
       .finally(() => {
         setLoading(false);
       });
   }, [domain]);
 
-  if (loading || !scenarios) {
+  if (loading || !question) {
     return (
       <div className="flex flex-col items-center">
         <LatencyOverlay />
@@ -46,21 +46,17 @@ export default function GuideIntro({ domain, onSelect }: GuideIntroProps) {
   return (
     <section className="w-full max-w-xl space-y-6 text-gold">
       <h2 className="text-2xl font-serif mb-4">
-        Select a scenario where your domain can shine:
+        Your Reflection Prompt
       </h2>
-
-      <ul className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        {scenarios.map((scenario, index) => (
-          <li key={index}>
-            <button
-              onClick={() => onSelect(scenario)}
-              className="btn-outline w-full text-left p-4"
-            >
-              {scenario}
-            </button>
-          </li>
-        ))}
-      </ul>
+      <div className="mb-6 border-l-4 border-gold/40 pl-4 text-lg italic">
+        {question}
+      </div>
+      <button
+        onClick={() => onSelect(question)}
+        className="btn-primary w-full py-3"
+      >
+        Begin
+      </button>
     </section>
   );
 }
