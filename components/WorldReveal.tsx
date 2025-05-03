@@ -7,10 +7,10 @@ interface WorldRevealProps {
 }
 
 const worldImages: Record<string, string> = {
-  "Dream-Sea": "/worlds/Dream-Sea.jpg",
-  Emberwake: "/worlds/Emberwake.jpg",
-  Stormlight: "/worlds/Stormlight.jpg",
-  Whispergrove: "/worlds/Whispergrove.jpg",
+  "Dream-Sea": "/worlds/Dream-Sea.png",
+  Emberwake: "/worlds/Emberwake.png",
+  Stormlight: "/worlds/Stormlight.png",
+  Whispergrove: "/worlds/Whispergrove.png",
 };
 
 export default function WorldReveal({ world }: WorldRevealProps) {
