@@ -1,4 +1,5 @@
 // pages/api/domains.ts
+
 import type { NextApiRequest, NextApiResponse } from "next";
 import { GoogleGenAI } from "@google/genai";
 import dotenv from "dotenv";
@@ -9,6 +10,7 @@ const OR_KEYS = (process.env.OPENROUTER_KEYS || "")
   .split(",")
   .map((k) => k.trim());
 let orIndex = 0;
+
 function nextOrKey() {
   const key = OR_KEYS[orIndex % OR_KEYS.length];
   orIndex++;
@@ -32,6 +34,7 @@ export default async function handler(
   res: NextApiResponse
 ) {
   if (req.method !== "POST") return res.status(405).end();
+
   const { answers } = req.body;
   if (!Array.isArray(answers) || !answers.length) {
     return res.status(400).json({ error: "Missing answers" });
@@ -42,7 +45,7 @@ Based on these 10 answers: ${answers.join(" | ")},
 suggest exactly five distinct, poetic "super-power domains"
 (e.g. "Weaver of Connections", "Silent Observer").
 Return just the list.
-  `.trim();
+`.trim();
 
   // 1️⃣ Gemini primary
   try {
@@ -50,16 +53,17 @@ Return just the list.
       model: "gemini-2.5-flash-preview-04-17",
       contents: [prompt],
     });
-    if (!resp || !resp.text) {
-    res.status(500).json({ error: 'Invalid response structure.' });
-    return;
-  }
 
-  const list = resp.text
+    if (!resp || !resp.text) {
+      return res.status(500).json({ error: "Invalid response structure." });
+    }
+
+    const list = resp.text
       .split(/[\r\n,]+/)
       .map((s) => s.trim())
       .filter(Boolean)
       .slice(0, 5);
+
     return res.status(200).json({ suggestions: list });
   } catch {}
 
@@ -74,6 +78,7 @@ Return just the list.
         ],
         temperature: 0.8,
       };
+
       const r = await fetchWithTimeout(
         "https://openrouter.ai/api/v1/chat/completions",
         {
@@ -86,19 +91,22 @@ Return just the list.
         },
         10000
       );
+
       if (!r.ok) continue;
+
       const { choices } = await r.json();
       const list = choices[0].message.content
         .split(/[\r\n,]+/)
         .map((s: string) => s.trim())
-        .filter((s: string) => Boolean(s))
+        .filter(Boolean)
         .slice(0, 5);
+
       return res.status(200).json({ suggestions: list });
     } catch {}
   }
 
   // 3️⃣ Hard fallback
-  res
-    .status(200)
-    .json({ suggestions: ["Curiosity", "Courage", "Reflection", "Discovery", "Wonder"] });
-}
+  res.status(200).json({
+    suggestions: ["Curiosity", "Courage", "Reflection", "Discovery", "Wonder"],
+  });
+};
