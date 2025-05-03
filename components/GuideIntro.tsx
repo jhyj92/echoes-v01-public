@@ -6,10 +6,10 @@ import LatencyOverlay from "@/components/LatencyOverlay";
 
 export interface GuideIntroProps {
   domain: string;
-  onPick: (scenario: string) => void;
+  onSelect: (scenario: string) => void;
 }
 
-export default function GuideIntro({ domain, onPick }: GuideIntroProps) {
+export default function GuideIntro({ domain, onSelect }: GuideIntroProps) {
   const [scenarios, setScenarios] = useState<string[] | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -53,7 +53,7 @@ export default function GuideIntro({ domain, onPick }: GuideIntroProps) {
         {scenarios.map((scenario, index) => (
           <li key={index}>
             <button
-              onClick={() => onPick(scenario)}
+              onClick={() => onSelect(scenario)}
               className="btn-outline w-full text-left p-4"
             >
               {scenario}
