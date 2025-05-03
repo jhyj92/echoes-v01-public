@@ -1,4 +1,4 @@
-// pages/api/guideIntro.ts
+// /pages/api/guideIntro.ts
 
 import type { NextApiRequest, NextApiResponse } from "next";
 import { GoogleGenAI } from "@google/genai";
@@ -6,24 +6,20 @@ import dotenv from "dotenv";
 
 dotenv.config();
 
-// OpenRouter key rotation
 const OR_KEYS = (process.env.OPENROUTER_KEYS || "")
   .split(",")
   .map((k) => k.trim())
   .filter(Boolean);
 
 let orIndex = 0;
-
 function nextOrKey() {
   const key = OR_KEYS[orIndex % OR_KEYS.length];
   orIndex++;
   return key;
 }
 
-// Gemini client
 const gemini = new GoogleGenAI({ apiKey: process.env.GEMINI_KEY! });
 
-// Simple fetch with timeout
 async function fetchWithTimeout(url: string, opts: any = {}, ms = 10000) {
   const ctrl = new AbortController();
   const id = setTimeout(() => ctrl.abort(), ms);
@@ -43,19 +39,14 @@ export default async function handler(
 
   const { idx, domain, reflections } = req.body;
 
-  if (
-    typeof idx !== "number" ||
-    typeof domain !== "string" ||
-    !Array.isArray(reflections)
-  ) {
-    return res.status(400).json({ error: "Missing idx, domain or reflections" });
+  if (typeof domain !== "string") {
+    return res.status(400).json({ error: "Missing domain" });
   }
 
+  // For Option 2, just return a single question string
   const prompt = `
-You are Echoes, a poetic guide. The user selected domain "${domain}"—a hidden
-strength. Based on their previous ${idx} reflections:
-${reflections.join(" | ")}, ask reflection question ${idx + 1}/10
-that explores the essence of this domain. Return only the next question.
+You are Echoes, a poetic guide. The user selected domain "${domain}"-a hidden
+strength. Ask a single reflection question that explores the essence of this domain. Return only the question.
   `.trim();
 
   // 1️⃣ Gemini primary
