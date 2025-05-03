@@ -10,9 +10,10 @@ export default function CodexPage() {
 
   useEffect(() => {
     if (typeof window === "undefined") return;
+
     const stored: string[] = JSON.parse(localStorage.getItem("echoes_codex") || "[]");
     const entries: CodexEntry[] = stored.map((str) => ({
-      title: str
+      title: str,
     }));
     setTree(entries);
   }, []);
@@ -20,9 +21,9 @@ export default function CodexPage() {
   if (!tree) return null;
 
   return (
-    <main className="relative flex flex-col items-center justify-center min-h-screen px-4">
+    <main className="relative flex flex-col items-center justify-center min-h-screen px-4 bg-black text-gold">
       <Starfield />
-      <h1 className="text-3xl font-serif text-gold mb-6">Your Codex</h1>
+      <h1 className="text-3xl font-serif mb-6">Your Codex</h1>
       <CodexTree tree={tree} />
     </main>
   );
