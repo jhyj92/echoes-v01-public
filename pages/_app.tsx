@@ -1,3 +1,4 @@
+// pages/_app.tsx
 "use client";
 
 import "@/styles/globals.css";
@@ -11,14 +12,11 @@ export default function App({ Component, pageProps }: AppProps) {
     <>
       <Head>
         <title>Echoes</title>
-        <meta
-          name="description"
-          content="Discover your hidden superpower through poetic reflection."
-        />
+        <meta name="description" content="Discover your hidden superpower through poetic reflection." />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
       </Head>
-      {/* Flex container to center all pages */}
-      <div className="bg-black text-gold min-h-screen flex flex-col items-center justify-center">
+      {/* This is the critical flex wrapper */}
+      <div className="min-h-screen flex flex-col bg-black text-gold">
         <Component {...pageProps} />
       </div>
     </>
