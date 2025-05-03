@@ -8,7 +8,9 @@ import landingTaglines from "../data/landingTaglines";
 export default function Home() {
   const router = useRouter();
   const [taglineIndex, setTaglineIndex] = useState(0);
-  const [isRedirecting, setIsRedirecting] = useState(true);
+  const [hasExistingJourney, setHasExistingJourney] = useState(false);
+  const [journeyDestination, setJourneyDestination] = useState("/onboarding");
+  const [isLoading, setIsLoading] = useState(true);
 
   // Rotate taglines
   useEffect(() => {
@@ -18,7 +20,7 @@ export default function Home() {
     return () => clearInterval(interval);
   }, []);
 
-  // Check resume flow logic
+  // Check for existing journey without auto-redirecting
   useEffect(() => {
     if (!router.isReady) return;
 
@@ -26,18 +28,22 @@ export default function Home() {
     const domain = localStorage.getItem("echoes_domain");
     const superpower = localStorage.getItem("echoes_superpower");
 
+    // Just detect if journey exists and where to resume from
     if (superpower && superpower.trim() !== "") {
-      router.replace("/hero");
+      setHasExistingJourney(true);
+      setJourneyDestination("/hero");
     } else if (domain && domain.trim() !== "") {
-      router.replace("/guide");
+      setHasExistingJourney(true);
+      setJourneyDestination("/guide");
     } else if (answers && answers.trim() !== "") {
-      router.replace("/domains");
-    } else {
-      setIsRedirecting(false);
+      setHasExistingJourney(true);
+      setJourneyDestination("/domains");
     }
+
+    setIsLoading(false);
   }, [router.isReady]);
 
-  if (isRedirecting) return null;
+  if (isLoading) return null;
 
   return (
     <main className="relative h-screen w-screen overflow-hidden bg-black text-white">
@@ -51,12 +57,21 @@ export default function Home() {
           {landingTaglines[taglineIndex]}
         </p>
 
-        <div className="flex space-x-4 z-10 fade-in">
+        <div className="flex flex-col sm:flex-row space-y-4 sm:space-y-0 sm:space-x-4 z-10 fade-in">
+          {hasExistingJourney && (
+            <button
+              onClick={() => router.push(journeyDestination)}
+              className="btn-primary"
+            >
+              Continue Journey
+            </button>
+          )}
+          
           <button
             onClick={() => router.push("/onboarding")}
-            className="btn-primary"
+            className={`${hasExistingJourney ? "btn-outline" : "btn-primary"}`}
           >
-            Start Journey
+            {hasExistingJourney ? "New Journey" : "Start Journey"}
           </button>
 
           <button
