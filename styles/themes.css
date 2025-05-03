@@ -1,34 +1,81 @@
+/* /styles/themes.css */
+
+/* Global color variables */
 :root {
+  --clr-background: #000000;
   --clr-gold: #d4af37;
-  --clr-bg: #000000;
+  --clr-text: #ffffff;
   --hue-shift: 0deg;
 }
 
+/* Theme styles */
 body {
-  background-color: var(--clr-bg);
+  background-color: var(--clr-background);
+  color: var(--clr-text);
+}
+
+h1, h2, h3, h4, h5, h6 {
   color: var(--clr-gold);
+  font-family: 'serif';
 }
 
-.animate-fade-in {
-  opacity: 0;
-  animation: fadeIn 1s ease forwards;
+a {
+  color: var(--clr-gold);
+  text-decoration: none;
 }
 
-.animate-fade-in.delay-500 {
-  animation-delay: 0.5s;
+a:hover {
+  text-decoration: underline;
 }
 
-.animate-fade-in.delay-1000 {
-  animation-delay: 1s;
-}
-
-@keyframes fadeIn {
+/* Fade animation (global use e.g. landing page buttons / titles) */
+@keyframes fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
   to {
     opacity: 1;
+    transform: translateY(0);
   }
 }
 
+.animate-fade-in {
+  animation: fade-in 0.8s ease-out forwards;
+}
+
+/* Hue rotation for dynamic mood shifting (used by Interviewer etc) */
 .hue-rotate {
   filter: hue-rotate(var(--hue-shift));
-  transition: filter 1s ease;
+}
+
+/* Primary button style */
+.btn-primary {
+  background-color: var(--clr-gold);
+  color: var(--clr-background);
+  padding: 0.5rem 1rem;
+  border-radius: 0.375rem;
+  font-weight: bold;
+  transition: background-color 0.3s, color 0.3s;
+}
+
+.btn-primary:hover {
+  background-color: #f5d76e;
+  color: #000000;
+}
+
+/* Outline button style */
+.btn-outline {
+  background-color: transparent;
+  border: 2px solid var(--clr-gold);
+  color: var(--clr-gold);
+  padding: 0.5rem 1rem;
+  border-radius: 0.375rem;
+  font-weight: bold;
+  transition: background-color 0.3s, color 0.3s;
+}
+
+.btn-outline:hover {
+  background-color: var(--clr-gold);
+  color: var(--clr-background);
 }
