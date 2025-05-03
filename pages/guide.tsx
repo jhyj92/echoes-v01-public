@@ -1,4 +1,4 @@
-// /pages/guide.tsx
+// pages/guide.tsx
 "use client";
 
 import { useEffect, useState } from "react";
@@ -14,6 +14,8 @@ export default function GuidePage() {
   const [scenario, setScenario] = useState<string | null>(null);
 
   useEffect(() => {
+    if (!router.isReady) return;
+
     const storedScenario = localStorage.getItem("echoes_scenario");
     const storedDomain = localStorage.getItem("echoes_domain");
 
@@ -27,7 +29,7 @@ export default function GuidePage() {
     if (storedScenario) {
       setScenario(storedScenario);
     }
-  }, [router]);
+  }, [router.isReady]);
 
   const handleSelect = (selected: string) => {
     localStorage.setItem("echoes_scenario", selected);
