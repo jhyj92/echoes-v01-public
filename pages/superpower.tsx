@@ -21,15 +21,19 @@ export default function SuperpowerPage() {
   useEffect(() => {
     if (domain && answers.length >= 10) {
       (async () => {
-        const res = await fetch("/api/superpower", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ domain, guideAnswers: answers }),
-        });
-        const { superpower: sp, description: desc } = await res.json();
-        setSuperpower(sp);
-        setDescription(desc);
-        localStorage.setItem("echoes_superpower", sp);
+        try {
+          const res = await fetch("/api/superpower", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ domain, reflections: answers }), // <-- fixed key here
+          });
+          const { superpower: sp, description: desc } = await res.json();
+          setSuperpower(sp);
+          setDescription(desc);
+          localStorage.setItem("echoes_superpower", sp);
+        } catch (error) {
+          console.error("Failed to fetch superpower:", error);
+        }
       })();
     }
   }, [domain, answers]);
