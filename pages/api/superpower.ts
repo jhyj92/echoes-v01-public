@@ -37,10 +37,13 @@ export default async function handler(
     return res.status(400).json({ error: "Missing domain or reflections" });
   }
 
+  // Sanitize reflections
+  const safeReflections = reflections.map((s: string) => s.replace(/[\r\n]+/g, " ").trim());
+
   const prompt = `
 Synthesize and name the user's precise superpower in one poetic phrase,
 based on these 10 reflections in domain "${domain}":
-${reflections.join(" | ")}.
+${safeReflections.join(" | ")}.
   `.trim();
 
   // 1️⃣ Gemini primary
@@ -53,7 +56,8 @@ ${reflections.join(" | ")}.
     if (resp?.text?.trim()) {
       return res.status(200).json({ superpower: resp.text.trim() });
     }
-  } catch {
+  } catch (error) {
+    console.error("Gemini API error:", error);
     // Fall through
   }
 
@@ -85,9 +89,11 @@ ${reflections.join(" | ")}.
       if (!r.ok) continue;
 
       const { choices } = await r.json();
-      return res.status(200).json({ superpower: choices[0].message.content.trim() });
-    } catch {
-      // continue
+      if (choices?.[0]?.message?.content?.trim()) {
+        return res.status(200).json({ superpower: choices[0].message.content.trim() });
+      }
+    } catch (error) {
+      console.error("OpenRouter fallback error:", error);
     }
   }
 
