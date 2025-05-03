@@ -19,8 +19,9 @@ export default function DomainSelector({ domains, onSelect }: DomainSelectorProp
       {domains.map((domain) => (
         <button
           key={domain}
+          type="button"
           onClick={() => onSelect(domain)}
-          className="border border-gold rounded px-6 py-3 text-gold hover:bg-gold hover:text-black transition"
+          className="border border-gold rounded px-6 py-3 text-gold hover:bg-gold hover:text-black focus:ring-2 focus:ring-gold transition"
           aria-label={`Select domain ${domain}`}
         >
           {domain}
