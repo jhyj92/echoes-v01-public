@@ -47,7 +47,11 @@ export default function HeroChat({ scenario }: HeroChatProps) {
       const res = await fetchWithTimeout("/api/heroChat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ scenario, messages: updated }),
+        body: JSON.stringify({
+          scenario,
+          history: messages, // previous messages
+          userMessage: input.trim(), // current message
+        }),
       });
       const { reply, done } = await res.json();
       const heroMsg: ChatMessage = { from: "hero", text: reply };
