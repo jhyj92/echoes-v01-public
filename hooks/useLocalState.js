@@ -1,6 +1,10 @@
-// hooks/useLocalState.js
 import { useState, useEffect } from "react";
 
+/** 
+ * useLocalState (React Hook)
+ * Persist state in localStorage (SSR-safe).
+ * Warns on read/write errors.
+ */
 export function useLocalState(key, initialValue) {
   // Lazy-init state from localStorage (or fallback to initialValue)
   const [value, setValue] = useState(() => {
