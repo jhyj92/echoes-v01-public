@@ -1,43 +1,61 @@
-// pages/index.tsx
-"use client";
-
+import { useEffect, useState } from "react";
 import { useRouter } from "next/router";
-import { useEffect } from "react";
-import Starfield from "@/components/Starfield";
-import useHydratedState from "@/hooks/useHydratedState";
+import Starfield from "../components/Starfield";
+import landingTaglines from "../data/landingTaglines";
 
-export default function Landing() {
+export default function Home() {
   const router = useRouter();
-  const domain = useHydratedState<string | null>("echoes_domain", null);
-  const superpower = useHydratedState<string | null>("echoes_superpower", null);
+  const [taglineIndex, setTaglineIndex] = useState(0);
 
   useEffect(() => {
-    if (superpower) {
+    // Rotate taglines every 5 seconds
+    const interval = setInterval(() => {
+      setTaglineIndex((prevIndex) => (prevIndex + 1) % landingTaglines.length);
+    }, 5000);
+    return () => clearInterval(interval);
+  }, []);
+
+  useEffect(() => {
+    // Check for existing user progress
+    const answers = localStorage.getItem("echoes_answers");
+    const domain = localStorage.getItem("echoes_domain");
+    const superpower = localStorage.getItem("echoes_superpower");
+
+    if (superpower && superpower.trim() !== "") {
       router.replace("/hero");
-    } else if (domain) {
+    } else if (domain && domain.trim() !== "") {
       router.replace("/guide");
+    } else if (answers && answers.trim() !== "") {
+      router.replace("/domains");
     }
-  }, [domain, superpower, router]);
+    // If no progress, stay on the landing page
+  }, [router]);
 
   return (
-    <main className="relative flex flex-col items-center justify-center min-h-screen text-center bg-black">
+    <div className="relative h-screen w-screen overflow-hidden bg-black text-white">
       <Starfield />
-      <h1 className="text-6xl font-serif text-gold mb-4">Echoes</h1>
-      <p className="text-xl mb-12 max-w-md">
-        Your soul remembers.<br/>Step through the Echoes.
-      </p>
-      <button
-        className="btn-primary mb-4"
-        onClick={() => router.push("/onboarding")}
-      >
-        Start Journey
-      </button>
-      <button
-        className="btn-outline"
-        onClick={() => router.push("/codex")}
-      >
-        View Codex
-      </button>
-    </main>
+      <div className="absolute inset-0 flex flex-col items-center justify-center text-center px-4">
+        <h1 className="text-5xl font-bold mb-4 animate-fade-in">
+          Echoes
+        </h1>
+        <p className="text-xl mb-8 animate-fade-in delay-500">
+          {landingTaglines[taglineIndex]}
+        </p>
+        <div className="flex space-x-4 animate-fade-in delay-1000">
+          <button
+            onClick={() => router.push("/onboarding")}
+            className="px-6 py-2 bg-gold text-black font-semibold rounded hover:bg-yellow-500 transition"
+          >
+            Start Journey
+          </button>
+          <button
+            onClick={() => router.push("/codex")}
+            className="px-6 py-2 border border-gold text-gold font-semibold rounded hover:bg-gold hover:text-black transition"
+          >
+            View Codex
+          </button>
+        </div>
+      </div>
+    </div>
   );
 }
