@@ -1,4 +1,3 @@
-// /pages/api/superpower.ts
 import type { NextApiRequest, NextApiResponse } from "next";
 import { GoogleGenAI } from "@google/genai";
 import dotenv from "dotenv";
@@ -33,47 +32,41 @@ export default async function handler(
 ) {
   if (req.method !== "POST") return res.status(405).end();
 
-  const { domain, guideAnswers } = req.body;
-
-  if (typeof domain !== "string" || !Array.isArray(guideAnswers) || guideAnswers.length === 0) {
-    return res.status(400).json({ error: "Missing or invalid domain or guideAnswers." });
+  const { domain, reflections } = req.body;
+  if (typeof domain !== "string" || !Array.isArray(reflections)) {
+    return res.status(400).json({ error: "Missing domain or reflections" });
   }
 
-  const messages = [
-    { role: "system", content: `Domain: ${domain}` },
-    {
-      role: "user",
-      content: `Based on my journey through this domain, here are my reflections:\n\n${guideAnswers.join(
-        "\n"
-      )}\n\nPlease summarize my core superpower and describe it poetically in 1-2 sentences.`,
-    },
-  ];
+  const prompt = `
+Synthesize and name the user's precise superpower in one poetic phrase,
+based on these 10 reflections in domain "${domain}":
+${reflections.join(" | ")}.
+  `.trim();
 
-  // Try Gemini first
+  // 1️⃣ Gemini primary
   try {
     const resp = await gemini.models.generateContent({
       model: "gemini-2.5-flash-preview-04-17",
-      contents: [messages.map((m) => m.content).join("\n")],
+      contents: [prompt],
     });
 
     if (resp?.text?.trim()) {
-      const [superpowerLine, ...descLines] = resp.text.trim().split("\n");
-      return res.status(200).json({
-        superpower: superpowerLine.trim(),
-        description: descLines.join("\n").trim(),
-      });
+      return res.status(200).json({ superpower: resp.text.trim() });
     }
   } catch {
-    // Gemini failed -> fallback
+    // Fall through
   }
 
-  // Fallback OpenRouter
+  // 2️⃣ OpenRouter fallback
   for (let i = 0; i < OR_KEYS.length; i++) {
     try {
       const body = {
         model: "deepseek/deepseek-chat-v3-0324:free",
-        messages,
-        temperature: 0.7,
+        messages: [
+          { role: "system", content: "You are a superpower synthesizer." },
+          { role: "user", content: prompt },
+        ],
+        temperature: 0.8,
       };
 
       const r = await fetchWithTimeout(
@@ -92,23 +85,12 @@ export default async function handler(
       if (!r.ok) continue;
 
       const { choices } = await r.json();
-      const reply = choices?.[0]?.message?.content?.trim();
-
-      if (reply) {
-        const [superpowerLine, ...descLines] = reply.split("\n");
-        return res.status(200).json({
-          superpower: superpowerLine.trim(),
-          description: descLines.join("\n").trim(),
-        });
-      }
+      return res.status(200).json({ superpower: choices[0].message.content.trim() });
     } catch {
-      // Ignore and continue fallback
+      // continue
     }
   }
 
-  // If everything fails
-  return res.status(200).json({
-    superpower: "The Silent Echo",
-    description: "A mysterious and unspoken strength that only emerges when words fade.",
-  });
+  // 3️⃣ Final hard fallback
+  res.status(200).json({ superpower: "The Whispering Architect" });
 }
