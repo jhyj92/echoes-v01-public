@@ -1,25 +1,22 @@
-// pages/api/interviewer.ts
+// /pages/api/interviewer.ts
 import type { NextApiRequest, NextApiResponse } from "next";
 import { GoogleGenAI } from "@google/genai";
 import dotenv from "dotenv";
 
 dotenv.config();
 
-// OpenRouter key rotation
+const gemini = new GoogleGenAI({ apiKey: process.env.GEMINI_KEY! });
 const OR_KEYS = (process.env.OPENROUTER_KEYS || "")
   .split(",")
   .map((k) => k.trim());
 let orIndex = 0;
+
 function nextOrKey() {
   const key = OR_KEYS[orIndex % OR_KEYS.length];
   orIndex++;
   return key;
 }
 
-// Gemini client
-const gemini = new GoogleGenAI({ apiKey: process.env.GEMINI_KEY! });
-
-// Simple fetch with timeout
 async function fetchWithTimeout(url: string, opts: any = {}, ms = 10000) {
   const ctrl = new AbortController();
   const id = setTimeout(() => ctrl.abort(), ms);
@@ -30,47 +27,63 @@ async function fetchWithTimeout(url: string, opts: any = {}, ms = 10000) {
   }
 }
 
+const staticFallback = [
+  "What motivates you in difficult times?",
+  "How do you usually solve complex problems?",
+  "What do your friends rely on you for?",
+  "What activity makes you lose track of time?",
+  "When do you feel most confident?",
+  "What kind of challenges excite you?",
+  "How do you recharge when you're drained?",
+  "When have you surprised yourself?",
+  "What is your greatest strength?",
+  "What makes you uniquely you?",
+];
+
 export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse
 ) {
   if (req.method !== "POST") return res.status(405).end();
-  const { idx, answers } = req.body;
-  if (typeof idx !== "number" || !Array.isArray(answers)) {
-    return res.status(400).json({ error: "Missing idx or answers" });
-  }
 
-  const prompt = `
-You are Echoes, a poetic interviewer designed to gently unveil a visitor's subtle,
-unique superpower. Ask question ${idx + 1}/10, building on previous answers:
-${answers.join(" | ")}. Return only the next open-ended question—no meta commentary.
-  `.trim();
+  const messages = [
+    {
+      role: "system",
+      content:
+        "You are the Echoes Interviewer. Generate 10 insightful and personal questions to help someone discover their superpower. Keep them open-ended and non-generic. Do NOT repeat questions. Only output them as a numbered list without any other text.",
+    },
+  ];
 
-  // 1️⃣ Gemini primary
+  // Try Gemini first
   try {
-    const resp = await gemini.models.generateContent({
+    const response = await gemini.models.generateContent({
       model: "gemini-2.5-flash-preview-04-17",
-      contents: [prompt],
+      contents: [messages.map((m) => m.content).join("\n")],
     });
-    if (!resp || !resp.text) {
-      return res.status(500).json({ error: 'Invalid response structure.' });
+
+    const result = response?.text?.trim();
+    if (result) {
+      const questions = result
+        .split(/\n+/)
+        .map((line) => line.replace(/^\d+\.?\s*/, "").trim())
+        .filter(Boolean);
+      if (questions.length >= 5) {
+        return res.status(200).json({ questions });
+      }
     }
-    return res.status(200).json({ question: resp.text.trim() });
-  } catch (_e) {
-    // fall through to OpenRouter
+  } catch {
+    // ignore and fallback
   }
 
-  // 2️⃣ OpenRouter fallback
+  // Try OpenRouter fallback
   for (let i = 0; i < OR_KEYS.length; i++) {
     try {
       const body = {
         model: "deepseek/deepseek-chat-v3-0324:free",
-        messages: [
-          { role: "system", content: "You are a poetic interviewer." },
-          { role: "user", content: prompt },
-        ],
-        temperature: 0.8,
+        messages,
+        temperature: 0.7,
       };
+
       const r = await fetchWithTimeout(
         "https://openrouter.ai/api/v1/chat/completions",
         {
@@ -83,14 +96,26 @@ ${answers.join(" | ")}. Return only the next open-ended question—no meta comme
         },
         10000
       );
+
       if (!r.ok) continue;
+
       const { choices } = await r.json();
-      return res.status(200).json({ question: choices[0].message.content.trim() });
-    } catch {}
+      const reply = choices?.[0]?.message?.content?.trim();
+
+      if (reply) {
+        const questions = reply
+          .split(/\n+/)
+          .map((line) => line.replace(/^\d+\.?\s*/, "").trim())
+          .filter(Boolean);
+        if (questions.length >= 5) {
+          return res.status(200).json({ questions });
+        }
+      }
+    } catch {
+      // ignore and continue
+    }
   }
 
-  // 3️⃣ Hard fallback
-  res
-    .status(200)
-    .json({ question: "What small task absorbs you completely?" });
+  // Fallback to static
+  return res.status(200).json({ questions: staticFallback });
 }
