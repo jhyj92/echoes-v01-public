@@ -1,8 +1,8 @@
-// components/Interviewer.tsx
 "use client";
 
 import { useEffect, useState, FormEvent } from "react";
 import fetchWithTimeout from "@/utils/fetchWithTimeout";
+import LatencyOverlay from "@/components/LatencyOverlay";
 
 interface Props {
   onComplete(answers: string[]): void;
@@ -23,14 +23,10 @@ export default function Interviewer({ onComplete }: Props) {
   /* ---- Helpers --------------------------------------------------------- */
   const hueShift = () => {
     const curr = parseInt(
-      getComputedStyle(document.documentElement)
-        .getPropertyValue("--hue-shift") || "0",
+      getComputedStyle(document.documentElement).getPropertyValue("--hue-shift") || "0",
       10
     );
-    document.documentElement.style.setProperty(
-      "--hue-shift",
-      `${(curr + 20) % 360}deg`
-    );
+    document.documentElement.style.setProperty("--hue-shift", `${(curr + 20) % 360}deg`);
   };
 
   const stripMeta = (raw: string) =>
@@ -47,7 +43,7 @@ export default function Interviewer({ onComplete }: Props) {
       const res = await fetchWithTimeout("/api/interviewer", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ answersSoFar: answers }),
+        body: JSON.stringify({ idx: qIdx, answers }),
       });
       const data = await res.json();
       setQuestion(stripMeta(data.question || ""));
@@ -69,6 +65,7 @@ export default function Interviewer({ onComplete }: Props) {
     hueShift();
 
     if (qIdx === 9) {
+      localStorage.setItem("echoes_answers", JSON.stringify(updated));
       onComplete(updated);
     } else {
       setQIdx(qIdx + 1);
@@ -81,7 +78,7 @@ export default function Interviewer({ onComplete }: Props) {
 
   return (
     <section className="w-full max-w-3xl space-y-6 text-gold">
-      {loading && <p className="italic text-sm">The echoes are thinking…</p>}
+      {loading && <LatencyOverlay />}
 
       <div
         dangerouslySetInnerHTML={{
