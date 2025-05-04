@@ -28,15 +28,14 @@ async function fetchWithTimeout(url: string, opts: any = {}, ms = 2000) {
   }
 }
 
-export default async function handler(
-  req: NextApiRequest,
-  res: NextApiResponse
-) {
-  if (req.method !== "POST") return res.status(405).end();
+export default async function handler(req: NextApiRequest, res: NextApiResponse) {
+  if (req.method !== "POST") {
+    return res.status(405).json({ error: "Method Not Allowed" });
+  }
 
   const { answers } = req.body;
-  if (!Array.isArray(answers) || !answers.length) {
-    return res.status(400).json({ error: "Missing answers" });
+  if (!Array.isArray(answers) || answers.length === 0) {
+    return res.status(400).json({ error: "Missing or invalid answers" });
   }
 
   const safeAnswers = answers.map((s: string) => s.replace(/[\r\n]+/g, " ").trim());
@@ -59,7 +58,8 @@ Return just a list of five poetic domains, separated by line breaks or commas. N
         ],
         temperature: 0.8,
       };
-      const r = await fetchWithTimeout(
+
+      const response = await fetchWithTimeout(
         "https://openrouter.ai/api/v1/chat/completions",
         {
           method: "POST",
@@ -71,15 +71,21 @@ Return just a list of five poetic domains, separated by line breaks or commas. N
         },
         2000
       );
-      if (!r.ok) continue;
-      const { choices } = await r.json();
-      const list = choices?.[0]?.message?.content
-        ?.split(/[\r\n,]+/)
-        .map((s: string) => s.trim())
-        .filter(Boolean)
-        .slice(0, 5);
-      if (list && list.length > 0) {
-        return res.status(200).json({ suggestions: list, modelUsed: "meta-llama/llama-4-scout:free" });
+
+      if (!response.ok) continue;
+
+      const json = await response.json();
+      const content = json.choices?.[0]?.message?.content;
+      if (typeof content === "string") {
+        const list = content
+          .split(/[\r\n,]+/)
+          .map((s: string) => s.trim())
+          .filter(Boolean)
+          .slice(0, 5);
+
+        if (list.length > 0) {
+          return res.status(200).json({ suggestions: list, modelUsed: "meta-llama/llama-4-scout:free" });
+        }
       }
     } catch (error) {
       console.error("Llama-4-Scout error:", error);
@@ -87,7 +93,7 @@ Return just a list of five poetic domains, separated by line breaks or commas. N
   }
 
   // Fallback domains
-  res.status(200).json({
+  return res.status(200).json({
     suggestions: ["Curiosity", "Courage", "Reflection", "Discovery", "Wonder"],
     modelUsed: "hardcoded-fallback",
   });
