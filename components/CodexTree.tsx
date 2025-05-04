@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useState, KeyboardEvent } from "react";
 
 export interface CodexNode {
   id: string;
@@ -23,6 +23,14 @@ export default function CodexTree({ tree }: CodexTreeProps) {
     });
   };
 
+  const handleKeyDown = (e: KeyboardEvent<HTMLButtonElement>, id: string, hasChildren: boolean) => {
+    if (!hasChildren) return;
+    if (e.key === "Enter" || e.key === " ") {
+      e.preventDefault();
+      toggle(id);
+    }
+  };
+
   const renderNode = (entry: CodexNode) => {
     const hasChildren = entry.children && entry.children.length > 0;
     const isExpanded = expanded.has(entry.id);
@@ -32,15 +40,18 @@ export default function CodexTree({ tree }: CodexTreeProps) {
         <button
           type="button"
           onClick={() => hasChildren && toggle(entry.id)}
-          className="text-left text-gold hover:text-white transition"
+          onKeyDown={e => handleKeyDown(e, entry.id, hasChildren)}
+          className="text-left text-gold hover:text-white transition focus:outline-none focus:ring-2 focus:ring-gold rounded"
+          aria-expanded={isExpanded}
+          aria-controls={`${entry.id}-children`}
         >
           {hasChildren && (
-            <span className="mr-2">{isExpanded ? "▾" : "▸"}</span>
+            <span className="mr-2 select-none">{isExpanded ? "▾" : "▸"}</span>
           )}
           {entry.label}
         </button>
         {hasChildren && isExpanded && (
-          <ul className="ml-6 mt-2 space-y-1">
+          <ul id={`${entry.id}-children`} className="ml-6 mt-2 space-y-1">
             {entry.children!.map(renderNode)}
           </ul>
         )}
