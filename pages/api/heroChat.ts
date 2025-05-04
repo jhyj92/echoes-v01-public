@@ -25,6 +25,7 @@ function sanitizeMessage(text: string): string {
 function buildHeroPrompt(
   scenario: string,
   hero: string,
+  superpower: string,
   history: { from: "user" | "hero"; text: string }[],
   userMessage: string
 ): string {
@@ -37,7 +38,7 @@ function buildHeroPrompt(
   });
 
   return `
-You are ${hero}, a real or fictional character in crisis. You are aware of the user's emerging superpower, and are seeking their help. Share openly about your problem and why you think my strengths might help. Let our chat flow naturally — some back and forth, some reflection.
+You are ${hero}, a real or fictional character in crisis. You are aware of the user's unique superpower: "${superpower}", and are seeking their help. Share openly about your problem and why you think their strengths might help. Let our chat flow naturally - some back and forth, some reflection.
 
 **Rules:**
 - Only write your own dialogue as the hero. Never write the user's dialogue.
@@ -107,20 +108,21 @@ export default async function handler(
 ) {
   if (req.method !== "POST") return res.status(405).end();
 
-  const { scenario, hero, history, userMessage } = req.body;
+  const { scenario, hero, superpower, history, userMessage } = req.body;
 
   if (
     typeof scenario !== "string" ||
     typeof hero !== "string" ||
+    typeof superpower !== "string" ||
     !Array.isArray(history) ||
     typeof userMessage !== "string"
   ) {
-    return res.status(400).json({ error: "Missing or invalid scenario/hero/history/userMessage" });
+    return res.status(400).json({ error: "Missing or invalid scenario/hero/superpower/history/userMessage" });
   }
 
   const heroMsgCount = history.filter(m => m.from === "hero").length;
 
-  const prompt = buildHeroPrompt(scenario, hero, history, userMessage);
+  const prompt = buildHeroPrompt(scenario, hero, superpower, history, userMessage);
 
   // Try Gemini first
   let reply = await callGeminiModel(prompt);
