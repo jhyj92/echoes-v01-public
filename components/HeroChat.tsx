@@ -39,8 +39,6 @@ export default function HeroChat({ scenario, hero }: HeroChatProps) {
     }
   }, [scenario, hero]);
 
-  const heroMessageCount = messages.filter(m => m.from === "hero").length;
-
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     if (!input.trim() || loading || paused) return;
@@ -117,7 +115,11 @@ export default function HeroChat({ scenario, hero }: HeroChatProps) {
     <main className="relative flex flex-col items-center justify-center min-h-screen px-4 bg-black text-gold">
       <LatencyOverlay />
 
-      <ul className="space-y-4 w-full max-w-xl overflow-y-auto max-h-[60vh]">
+      <ul
+        className="space-y-4 w-full max-w-xl overflow-y-auto max-h-[60vh]"
+        aria-live="polite"
+        aria-relevant="additions"
+      >
         {messages.map(renderMessage)}
       </ul>
 
@@ -150,7 +152,7 @@ export default function HeroChat({ scenario, hero }: HeroChatProps) {
             value={input}
             onChange={e => setInput(e.target.value)}
             placeholder="Respond to the hero…"
-            className="flex-1 rounded bg-transparent border border-gold/40 px-3 py-2 focus:outline-none"
+            className="flex-1 rounded bg-transparent border border-gold/40 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-gold"
             autoFocus
             aria-label="Your message"
           />
@@ -161,7 +163,7 @@ export default function HeroChat({ scenario, hero }: HeroChatProps) {
       )}
 
       {loading && <p className="italic mt-2">The echoes are listening…</p>}
-      {error && <p className="text-red-500 italic mt-2">{error}</p>}
+      {error && <p className="text-red-500 italic mt-2" role="alert">{error}</p>}
     </main>
   );
 }
