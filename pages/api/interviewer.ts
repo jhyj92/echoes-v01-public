@@ -33,11 +33,7 @@ Ask the next open-ended question (number ${idx + 1}) that gently deepens their s
   `.trim();
 }
 
-async function callOpenRouterModel(
-  model: string,
-  prompt: string,
-  timeout = 2000
-): Promise<string | null> {
+async function callOpenRouterModel(model: string, prompt: string, timeout = 2000): Promise<string | null> {
   for (let i = 0; i < OR_KEYS.length; i++) {
     try {
       const body = {
@@ -68,11 +64,10 @@ async function callOpenRouterModel(
   return null;
 }
 
-export default async function handler(
-  req: NextApiRequest,
-  res: NextApiResponse
-) {
-  if (req.method !== "POST") return res.status(405).end();
+export default async function handler(req: NextApiRequest, res: NextApiResponse) {
+  if (req.method !== "POST") {
+    return res.status(405).json({ error: "Method Not Allowed" });
+  }
 
   const { idx, answers } = req.body;
   if (typeof idx !== "number" || !Array.isArray(answers)) {
@@ -110,7 +105,7 @@ export default async function handler(
   }
 
   // Fallback question
-  res.status(200).json({
+  return res.status(200).json({
     question: "What small task absorbs you completely?",
     modelUsed: "hardcoded-fallback",
   });
