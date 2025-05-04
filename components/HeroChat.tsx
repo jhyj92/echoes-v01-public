@@ -11,9 +11,12 @@ export interface HeroChatProps {
   hero: string;
 }
 
+const STORAGE_HISTORY_KEY = "echoes_history";
+const STORAGE_SCENARIO_KEY = "echoes_scenario";
+const STORAGE_HERO_KEY = "echoes_hero";
+
 export default function HeroChat({ scenario, hero }: HeroChatProps) {
   const router = useRouter();
-  const storageKey = `${scenario}-${hero}`;
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
@@ -22,10 +25,9 @@ export default function HeroChat({ scenario, hero }: HeroChatProps) {
 
   // Load chat history on mount
   useEffect(() => {
-    const stored: ChatMessage[] = loadHistory(storageKey);
+    const stored: ChatMessage[] = loadHistory(STORAGE_HISTORY_KEY);
     if (stored.length) {
       setMessages(stored);
-      // Check if paused (hero messages >= 10)
       const heroCount = stored.filter((m) => m.from === "hero").length;
       if (heroCount >= 10) setPaused(true);
     } else {
@@ -36,14 +38,14 @@ export default function HeroChat({ scenario, hero }: HeroChatProps) {
         },
       ];
       setMessages(init);
-      saveHistory(storageKey, init);
+      saveHistory(STORAGE_HISTORY_KEY, init);
+      localStorage.setItem(STORAGE_SCENARIO_KEY, scenario);
+      localStorage.setItem(STORAGE_HERO_KEY, hero);
     }
-  }, [scenario, hero, storageKey]);
+  }, [scenario, hero]);
 
-  // Count hero messages helper
   const heroMessageCount = messages.filter((m) => m.from === "hero").length;
 
-  // Handle sending user message
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     if (!input.trim() || loading || paused) return;
@@ -51,7 +53,7 @@ export default function HeroChat({ scenario, hero }: HeroChatProps) {
     const userMsg: ChatMessage = { from: "user", text: input.trim() };
     const updated = [...messages, userMsg];
     setMessages(updated);
-    saveHistory(storageKey, updated);
+    saveHistory(STORAGE_HISTORY_KEY, updated);
     setInput("");
     setLoading(true);
     setError(null);
@@ -73,7 +75,7 @@ export default function HeroChat({ scenario, hero }: HeroChatProps) {
       const heroMsg: ChatMessage = { from: "hero", text: reply };
       const withHero = [...updated, heroMsg];
       setMessages(withHero);
-      saveHistory(storageKey, withHero);
+      saveHistory(STORAGE_HISTORY_KEY, withHero);
 
       if (done) {
         setPaused(true);
@@ -87,27 +89,23 @@ export default function HeroChat({ scenario, hero }: HeroChatProps) {
       };
       const withFallback = [...updated, fallback];
       setMessages(withFallback);
-      saveHistory(storageKey, withFallback);
+      saveHistory(STORAGE_HISTORY_KEY, withFallback);
     } finally {
       setLoading(false);
     }
   };
 
-  // User chooses to continue conversation after pause
   const handleContinue = () => {
     setPaused(false);
     setError(null);
   };
 
-  // User chooses to examine superpower (go to reflection page)
   const handleExamine = () => {
     router.push("/reflection");
   };
 
-  // Render hero messages with numbering: "Hero [N]:"
   const renderMessage = (m: ChatMessage, idx: number) => {
     if (m.from === "hero") {
-      // Count how many hero messages before this one to number correctly
       const heroCount = messages
         .slice(0, idx + 1)
         .filter((msg) => msg.from === "hero").length;
