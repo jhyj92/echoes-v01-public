@@ -27,7 +27,6 @@ Return only a list of these pairs, no meta commentary.
       contents: [prompt],
     });
     if (resp?.text?.trim()) {
-      // Fixed regex: put dash at end of character class
       const options = resp.text.split(/\n+/).map(line => {
         const match = line.match(/^(.*?)[–:\-]+(.*)$/);
         if (match) {
