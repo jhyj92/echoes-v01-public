@@ -22,8 +22,11 @@ export default function HeroSelector({
         {options.map((opt, i) => (
           <li
             key={i}
+            tabIndex={0}
+            aria-pressed={selected === i}
             onClick={() => setSelected(i)}
-            className={`border rounded p-4 cursor-pointer ${selected === i ? "border-gold bg-gold/10" : "border-gold/40"}`}
+            onKeyDown={e => (e.key === "Enter" || e.key === " ") && setSelected(i)}
+            className={`border rounded p-4 cursor-pointer transition-colors duration-150 ${selected === i ? "border-gold bg-gold/10 ring-2 ring-gold" : "border-gold/40"}`}
           >
             <strong>{opt.hero}</strong>
             <div className="text-sm mt-1 italic">{opt.scenario}</div>
