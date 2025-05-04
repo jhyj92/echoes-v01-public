@@ -1,7 +1,8 @@
 "use client";
+
 import { useEffect, useState } from "react";
-import CodexTree, { CodexNode } from "@/components/CodexTree";
-import { loadCodexTree } from "@/utils/codexManager";
+import CodexTree from "@/components/CodexTree";
+import { CodexNode, loadCodexTree } from "@/utils/codexManager";
 import Starfield from "@/components/Starfield";
 
 export default function CodexPage() {
