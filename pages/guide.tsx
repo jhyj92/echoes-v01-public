@@ -1,16 +1,17 @@
 "use client";
-
 import { useEffect, useState } from "react";
 import { useRouter } from "next/router";
 import Starfield from "@/components/Starfield";
 import LatencyOverlay from "@/components/LatencyOverlay";
 import GuideIntro from "@/components/GuideIntro";
 import HeroSelector, { HeroOption } from "@/components/HeroSelector";
+import SuperpowerReveal from "@/components/SuperpowerReveal"; // NEW
 
 export default function GuidePage() {
   const router = useRouter();
   const [domain, setDomain] = useState<string | null>(null);
   const [reflections, setReflections] = useState<string[]>([]);
+  const [superpower, setSuperpower] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [heroOptions, setHeroOptions] = useState<HeroOption[] | null>(null);
@@ -34,28 +35,44 @@ export default function GuidePage() {
     }
   }, [router.isReady]);
 
+  // After 10 reflections, get superpower
   useEffect(() => {
-    if (reflections.length === 10 && domain) {
-      (async () => {
-        setLoading(true);
-        setError(null);
-        try {
-          const res = await fetch("/api/suggestHeroScenario", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ reflections, domain }),
-          });
+    if (reflections.length === 10 && domain && !superpower) {
+      setLoading(true);
+      setError(null);
+      fetch("/api/superpower", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ domain, reflections }),
+      })
+        .then(res => {
           if (!res.ok) throw new Error(`API error: ${res.status}`);
-          const data = await res.json();
-          setHeroOptions(data.options);
-        } catch {
-          setError("Failed to fetch hero options.");
-        } finally {
-          setLoading(false);
-        }
-      })();
+          return res.json();
+        })
+        .then(data => setSuperpower(data.superpower || ""))
+        .catch(() => setError("Failed to synthesize your superpower."))
+        .finally(() => setLoading(false));
     }
-  }, [reflections, domain]);
+  }, [reflections, domain, superpower]);
+
+  // After superpower is revealed and user continues, fetch hero options
+  const handleSuperpowerContinue = () => {
+    if (!domain || !reflections.length || !superpower) return;
+    setLoading(true);
+    setError(null);
+    fetch("/api/suggestHeroScenario", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ domain, reflections, superpower }),
+    })
+      .then(res => {
+        if (!res.ok) throw new Error(`API error: ${res.status}`);
+        return res.json();
+      })
+      .then(data => setHeroOptions(data.options))
+      .catch(() => setError("Failed to fetch hero options."))
+      .finally(() => setLoading(false));
+  };
 
   const handleComplete = (answers: string[]) => {
     setReflections(answers);
@@ -65,6 +82,7 @@ export default function GuidePage() {
   const handleHeroSelect = (hero: string, scenario: string) => {
     localStorage.setItem("echoes_hero", hero);
     localStorage.setItem("echoes_scenario", scenario);
+    localStorage.setItem("echoes_superpower", superpower || "");
     router.push("/hero");
   };
 
@@ -72,6 +90,7 @@ export default function GuidePage() {
     localStorage.removeItem("echoes_guide");
     localStorage.removeItem("echoes_hero");
     localStorage.removeItem("echoes_scenario");
+    localStorage.removeItem("echoes_superpower");
     router.replace("/domains");
   };
 
@@ -91,6 +110,17 @@ export default function GuidePage() {
         />
       )}
 
+      {reflections.length === 10 && !superpower && loading && (
+        <p className="italic mt-4">The echoes are discovering your superpower…</p>
+      )}
+
+      {reflections.length === 10 && superpower && !heroOptions && (
+        <SuperpowerReveal
+          superpower={superpower}
+          onContinue={handleSuperpowerContinue}
+        />
+      )}
+
       {reflections.length === 10 && heroOptions && (
         <>
           <HeroSelector options={heroOptions} onSelect={handleHeroSelect} />
@@ -103,7 +133,7 @@ export default function GuidePage() {
         </>
       )}
 
-      {loading && <p className="italic mt-4">The echoes are preparing your next step…</p>}
+      {loading && heroOptions && <p className="italic mt-4">The echoes are preparing your next step…</p>}
     </main>
   );
 }
