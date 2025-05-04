@@ -44,6 +44,7 @@ export default async function handler(
 Synthesize and name the user's precise superpower in one poetic phrase,
 based on these 10 reflections in domain "${domain}":
 ${safeReflections.join(" | ")}.
+Return only the phrase, no meta commentary.
   `.trim();
 
   // 1️⃣ Gemini primary
