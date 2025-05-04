@@ -7,6 +7,7 @@ dotenv.config();
 const OR_KEYS = (process.env.OPENROUTER_KEYS || "")
   .split(",")
   .map((k) => k.trim());
+
 let orIndex = 0;
 function nextOrKey() {
   const key = OR_KEYS[orIndex % OR_KEYS.length];
@@ -41,10 +42,8 @@ export default async function handler(
   const safeReflections = reflections.map((s: string) => s.replace(/[\r\n]+/g, " ").trim());
 
   const prompt = `
-Synthesize and name the user's precise superpower in one poetic phrase,
-based on these 10 reflections in domain "${domain}":
-${safeReflections.join(" | ")}.
-Return only the phrase, no meta commentary.
+Listening to these reflections and my chosen domain "${domain}", what is the personal gift you sense in me? Express it in a single, poetic phrase-something I could carry with me. Just the phrase, as if spoken softly by someone who sees me well.
+${safeReflections.join(" | ")}
   `.trim();
 
   // 1️⃣ Gemini primary
