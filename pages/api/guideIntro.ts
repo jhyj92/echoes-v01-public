@@ -28,11 +28,10 @@ async function fetchWithTimeout(url: string, opts: any = {}, ms = 2000) {
   }
 }
 
-export default async function handler(
-  req: NextApiRequest,
-  res: NextApiResponse
-) {
-  if (req.method !== "POST") return res.status(405).end();
+export default async function handler(req: NextApiRequest, res: NextApiResponse) {
+  if (req.method !== "POST") {
+    return res.status(405).json({ error: "Method Not Allowed" });
+  }
 
   const { idx, domain, reflections } = req.body;
 
@@ -57,7 +56,7 @@ You are a wise and subtle guide within Echoes. You sense their superpower formin
         temperature: 0.8,
       };
 
-      const r = await fetchWithTimeout(
+      const response = await fetchWithTimeout(
         "https://openrouter.ai/api/v1/chat/completions",
         {
           method: "POST",
@@ -70,10 +69,10 @@ You are a wise and subtle guide within Echoes. You sense their superpower formin
         2000
       );
 
-      if (!r.ok) continue;
+      if (!response.ok) continue;
 
-      const { choices } = await r.json();
-      const question = choices?.[0]?.message?.content?.trim();
+      const json = await response.json();
+      const question = json.choices?.[0]?.message?.content?.trim();
 
       if (question) {
         return res.status(200).json({ question, modelUsed: "deepseek/deepseek-chat-v3-0324:free" });
@@ -84,5 +83,5 @@ You are a wise and subtle guide within Echoes. You sense their superpower formin
   }
 
   // Fallback question
-  res.status(200).json({ question: "Reflect on a moment you felt truly aligned.", modelUsed: "hardcoded-fallback" });
+  return res.status(200).json({ question: "Reflect on a moment you felt truly aligned.", modelUsed: "hardcoded-fallback" });
 }
