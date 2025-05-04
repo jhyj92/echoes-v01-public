@@ -1,4 +1,5 @@
 import type { NextApiRequest, NextApiResponse } from "next";
+import { GoogleGenAI } from "@google/genai";
 import dotenv from "dotenv";
 
 dotenv.config();
@@ -15,6 +16,8 @@ function nextOrKey() {
   return key;
 }
 
+const gemini = new GoogleGenAI({ apiKey: process.env.GEMINI_KEY! });
+
 function sanitizeInput(input: string): string {
   return input.replace(/[\r\n]+/g, " ").trim();
 }
@@ -28,7 +31,6 @@ Ask the next open-ended question (number ${idx + 1}) that gently deepens their s
   `.trim();
 }
 
-// --- OpenRouter API Call ---
 async function callOpenRouterModel(model: string, prompt: string, timeout = 5000): Promise<string | null> {
   if (OR_KEYS.length === 0) {
     console.error("No OpenRouter API keys provided!");
@@ -46,6 +48,7 @@ async function callOpenRouterModel(model: string, prompt: string, timeout = 5000
         ],
         temperature: 0.8,
       };
+      console.log(`Calling OpenRouter model ${model} with key index ${i}`);
       const res = await fetch("https://openrouter.ai/api/v1/chat/completions", {
         method: "POST",
         headers: {
@@ -55,48 +58,21 @@ async function callOpenRouterModel(model: string, prompt: string, timeout = 5000
         body: JSON.stringify(body),
         signal: AbortSignal.timeout(timeout),
       });
+      console.log(`OpenRouter response status: ${res.status}`);
+      if (!res.ok) {
+        const errText = await res.text();
+        console.error(`OpenRouter error response: ${errText}`);
+        continue;
+      }
       const json = await res.json();
-      // Log full response for debugging
-      console.log("Full OpenRouter response:", JSON.stringify(json, null, 2));
       const content = json.choices?.[0]?.message?.content?.trim();
+      console.log(`OpenRouter model response content:`, content);
       if (content) return content;
     } catch (e) {
       console.error(`OpenRouter model ${model} error:`, e);
     }
   }
   return null;
-}
-
-// --- Gemini REST API Call ---
-async function callGemini(prompt: string): Promise<string | null> {
-  const apiKey = process.env.GEMINI_KEY;
-  if (!apiKey) {
-    console.error("GEMINI_KEY is not set.");
-    return null;
-  }
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${apiKey}`;
-
-  const body = {
-    contents: [
-      { parts: [{ text: prompt }] }
-    ]
-  };
-
-  try {
-    const response = await fetch(url, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(body),
-    });
-    const json = await response.json();
-    // Log full response for debugging
-    console.log("Full Gemini REST API response:", JSON.stringify(json, null, 2));
-    const text = json?.candidates?.[0]?.content?.parts?.[0]?.text;
-    return text?.trim() || null;
-  } catch (error) {
-    console.error("Gemini REST API error:", error);
-    return null;
-  }
 }
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
@@ -120,25 +96,37 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   // Try OpenRouter meta-llama/llama-4-scout first
   let question = await callOpenRouterModel("meta-llama/llama-4-scout:free", prompt, 5000);
   if (question) {
+    console.log("OpenRouter meta-llama responded");
     return res.status(200).json({ question, modelUsed: "meta-llama/llama-4-scout:free" });
   }
 
   // Then OpenRouter deepseek
   question = await callOpenRouterModel("deepseek/deepseek-chat-v3-0324:free", prompt, 5000);
   if (question) {
+    console.log("OpenRouter deepseek responded");
     return res.status(200).json({ question, modelUsed: "deepseek/deepseek-chat-v3-0324:free" });
   }
 
-  // Then Google Gemini via REST API
-  question = await callGemini(prompt);
-  if (question) {
-    return res.status(200).json({
-      question,
-      modelUsed: "gemini-pro-rest",
+  // Then Google Gemini 2.0 Flash Lite
+  try {
+    console.log("Calling Google Gemini 2.0");
+    const resp = await gemini.models.generateContent({
+      model: "gemini-2.0-flash-lite",
+      contents: [prompt],
     });
+    console.log("Gemini response:", resp);
+    if (resp?.text?.trim()) {
+      return res.status(200).json({
+        question: resp.text.trim(),
+        modelUsed: "gemini-2.0-flash-lite",
+      });
+    }
+  } catch (error) {
+    console.error("Gemini 2.0 error:", error);
   }
 
   // Fallback question
+  console.warn("Falling back to hardcoded question");
   return res.status(200).json({
     question: "What small task absorbs you completely?",
     modelUsed: "hardcoded-fallback",
