@@ -1,8 +1,10 @@
+"use client";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/router";
 import LatencyOverlay from "@/components/LatencyOverlay";
 import Starfield from "@/components/Starfield";
 import ReflectionLetter from "@/components/ReflectionLetter";
+import { addCodexJourney } from "@/utils/codexManager";
 
 export default function ReflectionPage() {
   const router = useRouter();
@@ -15,8 +17,9 @@ export default function ReflectionPage() {
     const superpower = localStorage.getItem("echoes_superpower");
     const scenario = localStorage.getItem("echoes_scenario");
     const hero = localStorage.getItem("echoes_hero");
+    const domain = localStorage.getItem("echoes_domain");
 
-    if (!history || !superpower || !scenario || !hero) {
+    if (!history || !superpower || !scenario || !hero || !domain) {
       router.replace("/hero");
       return;
     }
@@ -32,7 +35,7 @@ export default function ReflectionPage() {
             history: JSON.parse(history),
             scenario,
             hero,
-            superpower, // Pass superpower to API
+            superpower, // Pass superpower for personalized reflection
           }),
         });
 
@@ -40,10 +43,13 @@ export default function ReflectionPage() {
         const data = await res.json();
         setLetter(data.letter);
 
-        // Update codex with new letter
-        const codex = JSON.parse(localStorage.getItem("echoes_codex") || "[]");
-        codex.push(data.letter);
-        localStorage.setItem("echoes_codex", JSON.stringify(codex));
+        // Update codex with new journey or append to existing branch
+        addCodexJourney({
+          domain,
+          hero,
+          superpower,
+          letter: data.letter,
+        });
       } catch (err) {
         console.error(err);
         setError("Could not generate reflection letter. Please try again.");
