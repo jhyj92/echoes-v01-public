@@ -1,15 +1,14 @@
 "use client";
-
 import { useState } from "react";
 
-export interface CodexEntry {
+export interface CodexNode {
   id: string;
   label: string;
-  children?: CodexEntry[];
+  children?: CodexNode[];
 }
 
 interface CodexTreeProps {
-  tree: CodexEntry[];
+  tree: CodexNode[];
 }
 
 export default function CodexTree({ tree }: CodexTreeProps) {
@@ -27,13 +26,14 @@ export default function CodexTree({ tree }: CodexTreeProps) {
     });
   };
 
-  const renderNode = (entry: CodexEntry) => {
+  const renderNode = (entry: CodexNode) => {
     const hasChildren = entry.children && entry.children.length > 0;
     const isExpanded = expanded.has(entry.id);
 
     return (
       <li key={entry.id}>
         <button
+          type="button"
           onClick={() => hasChildren && toggle(entry.id)}
           className="text-left text-gold hover:text-white transition"
         >
@@ -42,7 +42,6 @@ export default function CodexTree({ tree }: CodexTreeProps) {
           )}
           {entry.label}
         </button>
-
         {hasChildren && isExpanded && (
           <ul className="ml-6 mt-2 space-y-1">
             {entry.children!.map(renderNode)}
@@ -53,10 +52,8 @@ export default function CodexTree({ tree }: CodexTreeProps) {
   };
 
   if (!tree || tree.length === 0) {
-    return <p className="italic text-gold">No entries found in the Codex.</p>;
+    return <p className="italic text-gold">No journeys found in your Codex yet.</p>;
   }
 
-  return (
-    <ul className="space-y-2">{tree.map(renderNode)}</ul>
-  );
+  return <ul className="space-y-2">{tree.map(renderNode)}</ul>;
 }
