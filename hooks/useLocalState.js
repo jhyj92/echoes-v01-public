@@ -9,7 +9,7 @@ export function useLocalState(key, initialValue) {
   // Lazy-init state from localStorage (or fallback to initialValue)
   const [value, setValue] = useState(() => {
     if (typeof window === "undefined") {
-      // SSR—return initial on server
+      // SSR-return initial on server
       return initialValue;
     }
     try {
