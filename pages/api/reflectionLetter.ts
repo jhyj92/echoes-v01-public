@@ -34,9 +34,14 @@ export default async function handler(
 ) {
   if (req.method !== "POST") return res.status(405).end();
 
-  const { scenario, hero, history } = req.body;
-  if (typeof scenario !== "string" || typeof hero !== "string" || !Array.isArray(history)) {
-    return res.status(400).json({ error: "Missing scenario, hero, or history" });
+  const { scenario, hero, history, superpower } = req.body;
+  if (
+    typeof scenario !== "string" ||
+    typeof hero !== "string" ||
+    !Array.isArray(history) ||
+    typeof superpower !== "string"
+  ) {
+    return res.status(400).json({ error: "Missing scenario, hero, history, or superpower" });
   }
 
   // Sanitize history
@@ -46,7 +51,14 @@ export default async function handler(
 
   // New poetic letter prompt
   const prompt = `
-You are ${hero}, and the time for words has come. Speak to the user as though they are no longer simply a helper, but a part of your story. Share how you first perceived their emerging gift, and how - through your exchanges - that perception deepened and transformed. Express gratitude for the unexpected ways they shaped your path. Reflect gently on how their superpower may continue to grow and touch both your world and others. Let your words feel personal, poetic, and timeless. Do not summarize mechanically. Instead, offer this letter as though it were left at the edge of a dream - tender, insightful, and quietly hopeful. Conclude softly, leaving the door open for future reunion, without making promises or breaking the reverie.
+You are ${hero}, and the time for words has come. Speak to the user as though they are no longer simply a helper, but a part of your story.
+You know their superpower: "${superpower}".
+Share how you first perceived their gift, and how - through your exchanges (see chat history below) - that perception deepened and transformed.
+Express gratitude for the unexpected ways they shaped your path.
+Reflect gently on how their superpower may continue to grow and touch both your world and others.
+Let your words feel personal, poetic, and timeless. Do not summarize mechanically.
+Instead, offer this letter as though it were left at the edge of a dream - tender, insightful, and quietly hopeful.
+Conclude softly, leaving the door open for future reunion, without making promises or breaking the reverie.
 
 Scenario: ${scenario}
 ${safeHistory.join('\n')}
