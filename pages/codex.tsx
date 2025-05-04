@@ -9,7 +9,8 @@ export default function CodexPage() {
 
   useEffect(() => {
     if (typeof window === "undefined") return;
-    setTree(loadCodexTree());
+    const codex = loadCodexTree();
+    setTree(codex ?? []);
   }, []);
 
   if (!tree) return null;
