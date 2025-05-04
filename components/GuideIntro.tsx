@@ -24,9 +24,12 @@ export default function GuideIntro({ domain, onComplete, initialAnswers = [] }: 
     fetch("/api/guideIntro", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ idx: qIdx, domain, answers }),
+      body: JSON.stringify({ idx: qIdx, domain, reflections: answers }),
     })
-      .then(res => res.json())
+      .then(res => {
+        if (!res.ok) throw new Error(`API error: ${res.status}`);
+        return res.json();
+      })
       .then(data => setQuestion(data.question || "…"))
       .catch(() => setError("Failed to load reflection question."))
       .finally(() => setLoading(false));
@@ -49,9 +52,13 @@ export default function GuideIntro({ domain, onComplete, initialAnswers = [] }: 
   if (question === null) return <LatencyOverlay />;
 
   return (
-    <section className="w-full max-w-2xl space-y-6 text-gold">
+    <section className="w-full max-w-2xl space-y-6 text-gold" aria-live="polite">
       {loading && <LatencyOverlay />}
-      {error && <p className="text-red-500 italic mb-2">{error}</p>}
+      {error && (
+        <p className="text-red-500 italic mb-2" role="alert">
+          {error}
+        </p>
+      )}
       <div>
         <strong>Reflection {qIdx + 1} of 10</strong>
         <br />
@@ -63,7 +70,7 @@ export default function GuideIntro({ domain, onComplete, initialAnswers = [] }: 
           value={answer}
           onChange={e => setAnswer(e.target.value)}
           placeholder="Type your reflection and press ↵"
-          className="w-full rounded bg-transparent border border-gold/40 px-3 py-2 focus:outline-none"
+          className="w-full rounded bg-transparent border border-gold/40 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-gold"
           autoFocus
           disabled={loading}
           aria-label={`Reflection ${qIdx + 1}`}
