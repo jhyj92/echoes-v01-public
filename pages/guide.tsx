@@ -1,92 +1,139 @@
-import type { NextApiRequest, NextApiResponse } from "next";
-import { GoogleGenAI } from "@google/genai";
-import dotenv from "dotenv";
+"use client";
+import { useEffect, useState } from "react";
+import { useRouter } from "next/router";
+import Starfield from "@/components/Starfield";
+import LatencyOverlay from "@/components/LatencyOverlay";
+import GuideIntro from "@/components/GuideIntro";
+import HeroSelector, { HeroOption } from "@/components/HeroSelector";
+import SuperpowerReveal from "@/components/SuperpowerReveal"; // NEW
 
-dotenv.config();
+export default function GuidePage() {
+  const router = useRouter();
+  const [domain, setDomain] = useState<string | null>(null);
+  const [reflections, setReflections] = useState<string[]>([]);
+  const [superpower, setSuperpower] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [heroOptions, setHeroOptions] = useState<HeroOption[] | null>(null);
 
-const OR_KEYS = (process.env.OPENROUTER_KEYS || "")
-  .split(",")
-  .map((k) => k.trim())
-  .filter(Boolean);
-
-let orIndex = 0;
-function nextOrKey() {
-  const key = OR_KEYS[orIndex % OR_KEYS.length];
-  orIndex++;
-  return key;
-}
-
-const gemini = new GoogleGenAI({ apiKey: process.env.GEMINI_KEY! });
-
-async function fetchWithTimeout(url: string, opts: any = {}, ms = 2000) {
-  const ctrl = new AbortController();
-  const id = setTimeout(() => ctrl.abort(), ms);
-  try {
-    return await fetch(url, { ...opts, signal: ctrl.signal });
-  } finally {
-    clearTimeout(id);
-  }
-}
-
-export default async function handler(req: NextApiRequest, res: NextApiResponse) {
-  if (req.method !== "POST") {
-    return res.status(405).json({ error: "Method Not Allowed" });
-  }
-
-  const { idx, domain, reflections } = req.body;
-
-  if (typeof idx !== "number" || typeof domain !== "string" || !Array.isArray(reflections)) {
-    return res.status(400).json({ error: "Missing or invalid idx, domain, or reflections" });
-  }
-
-  const safeReflections = reflections.map((s: string) => s.replace(/[\r\n]+/g, " ").trim());
-
-  const prompt = `
-Invite me into a world where someone might need my help. Ask me a few questions to identify my favourite movies, books, TV shows, current events, and/or historical periods I admire. Use my preferences to suggest a few figures (real or fictional) who could be facing something difficult. These should feel like natural ideas, not extreme crises. Keep it conversational and warm - like brainstorming together. Let me choose or offer my own.
-
-Domain: ${domain}
-Reflections so far: ${safeReflections.join(" | ")}
-
-Ask the next open-ended question (number ${idx + 1}) that invites me to share about stories or heroes I connect with. Return only the question, no extra commentary.
-  `.trim();
-
-  for (let i = 0; i < OR_KEYS.length; i++) {
-    try {
-      const body = {
-        model: "deepseek/deepseek-chat-v3-0324:free",
-        messages: [
-          { role: "system", content: "You are Echoes, a thoughtful and gentle companion." },
-          { role: "user", content: prompt },
-        ],
-        temperature: 0.8,
-      };
-
-      const response = await fetchWithTimeout(
-        "https://openrouter.ai/api/v1/chat/completions",
-        {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${nextOrKey()}`,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify(body),
-        },
-        2000
-      );
-
-      if (!response.ok) continue;
-
-      const json = await response.json();
-      const question = json.choices?.[0]?.message?.content?.trim();
-
-      if (question) {
-        return res.status(200).json({ question, modelUsed: "deepseek/deepseek-chat-v3-0324:free" });
-      }
-    } catch (error) {
-      console.error("Deepseek error:", error);
+  useEffect(() => {
+    if (!router.isReady) return;
+    const storedDomain = localStorage.getItem("echoes_domain");
+    if (!storedDomain) {
+      router.replace("/domains");
+      return;
     }
-  }
+    setDomain(storedDomain);
 
-  // Fallback question
-  return res.status(200).json({ question: "Reflect on a moment you felt truly aligned.", modelUsed: "hardcoded-fallback" });
+    const storedGuide = localStorage.getItem("echoes_guide");
+    if (storedGuide) {
+      try {
+        setReflections(JSON.parse(storedGuide));
+      } catch {
+        setReflections([]);
+      }
+    }
+  }, [router.isReady]);
+
+  // After 10 reflections, get superpower
+  useEffect(() => {
+    if (reflections.length === 10 && domain && !superpower) {
+      setLoading(true);
+      setError(null);
+      fetch("/api/superpower", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ domain, reflections }),
+      })
+        .then(res => {
+          if (!res.ok) throw new Error(`API error: ${res.status}`);
+          return res.json();
+        })
+        .then(data => setSuperpower(data.superpower || ""))
+        .catch(() => setError("Failed to synthesize your superpower."))
+        .finally(() => setLoading(false));
+    }
+  }, [reflections, domain, superpower]);
+
+  // After superpower is revealed and user continues, fetch hero options
+  const handleSuperpowerContinue = () => {
+    if (!domain || !reflections.length || !superpower) return;
+    setLoading(true);
+    setError(null);
+    fetch("/api/suggestHeroScenario", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ domain, reflections, superpower }),
+    })
+      .then(res => {
+        if (!res.ok) throw new Error(`API error: ${res.status}`);
+        return res.json();
+      })
+      .then(data => setHeroOptions(data.options))
+      .catch(() => setError("Failed to fetch hero options."))
+      .finally(() => setLoading(false));
+  };
+
+  const handleComplete = (answers: string[]) => {
+    setReflections(answers);
+    localStorage.setItem("echoes_guide", JSON.stringify(answers));
+  };
+
+  const handleHeroSelect = (hero: string, scenario: string) => {
+    localStorage.setItem("echoes_hero", hero);
+    localStorage.setItem("echoes_scenario", scenario);
+    localStorage.setItem("echoes_superpower", superpower || "");
+    router.push("/hero");
+  };
+
+  const handleRestart = () => {
+    localStorage.removeItem("echoes_guide");
+    localStorage.removeItem("echoes_hero");
+    localStorage.removeItem("echoes_scenario");
+    localStorage.removeItem("echoes_superpower");
+    router.replace("/domains");
+  };
+
+  if (!domain) return null;
+
+  return (
+    <main className="relative flex flex-col items-center justify-center min-h-screen px-4 bg-black text-gold">
+      <Starfield />
+      <LatencyOverlay />
+      {error && <div className="text-red-500 italic mb-4">{error}</div>}
+
+      {reflections.length < 10 && (
+        <GuideIntro
+          domain={domain}
+          onComplete={handleComplete}
+          initialAnswers={reflections}
+        />
+      )}
+
+      {reflections.length === 10 && !superpower && loading && (
+        <p className="italic mt-4">The echoes are discovering your superpower…</p>
+      )}
+
+      {reflections.length === 10 && superpower && !heroOptions && (
+        <SuperpowerReveal
+          superpower={superpower}
+          onContinue={handleSuperpowerContinue}
+        />
+      )}
+
+      {reflections.length === 10 && heroOptions && (
+        <>
+          <HeroSelector options={heroOptions} onSelect={handleHeroSelect} />
+          <button
+            className="btn-secondary mt-6"
+            onClick={handleRestart}
+          >
+            Restart Guide
+          </button>
+        </>
+      )}
+
+      {loading && heroOptions && <p className="italic mt-4">The echoes are preparing your next step…</p>}
+    </main>
+  );
 }
