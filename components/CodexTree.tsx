@@ -15,7 +15,7 @@ export default function CodexTree({ tree }: CodexTreeProps) {
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
 
   const toggle = (id: string) => {
-    setExpanded(prev => {
+    setExpanded((prev) => {
       const next = new Set(prev);
       if (next.has(id)) next.delete(id);
       else next.add(id);
@@ -23,7 +23,11 @@ export default function CodexTree({ tree }: CodexTreeProps) {
     });
   };
 
-  const handleKeyDown = (e: KeyboardEvent<HTMLButtonElement>, id: string, hasChildren: boolean) => {
+  const handleKeyDown = (
+    e: KeyboardEvent<HTMLButtonElement>,
+    id: string,
+    hasChildren: boolean
+  ) => {
     if (!hasChildren) return;
     if (e.key === "Enter" || e.key === " ") {
       e.preventDefault();
@@ -32,7 +36,8 @@ export default function CodexTree({ tree }: CodexTreeProps) {
   };
 
   const renderNode = (entry: CodexNode) => {
-    const hasChildren = entry.children && entry.children.length > 0;
+    // Explicitly coerce to boolean to avoid undefined
+    const hasChildren = !!(entry.children && entry.children.length > 0);
     const isExpanded = expanded.has(entry.id);
 
     return (
@@ -40,7 +45,7 @@ export default function CodexTree({ tree }: CodexTreeProps) {
         <button
           type="button"
           onClick={() => hasChildren && toggle(entry.id)}
-          onKeyDown={e => handleKeyDown(e, entry.id, hasChildren)}
+          onKeyDown={(e) => handleKeyDown(e, entry.id, hasChildren)}
           className="text-left text-gold hover:text-white transition focus:outline-none focus:ring-2 focus:ring-gold rounded"
           aria-expanded={isExpanded}
           aria-controls={`${entry.id}-children`}
