@@ -1,83 +1,68 @@
-// utils/codexManager.js
-
 /**
- * Flat & Tree‐based Codex manager for Echoes
+ * Codex Manager for Echoes (tree-based)
  */
+export interface CodexNode {
+  id: string;
+  label: string;
+  children?: CodexNode[];
+  ts?: number;
+}
 
-/** ─── FLAT LIST STORAGE ──────────────────────────────────────────────── */
-const FLAT_KEY = "echoes_codex_flat";
+const CODEX_KEY = "echoes_codex_tree";
 
-/** Load all flat Codex entries. */
-export function loadCodexFlat() {
+/** Load the Codex tree from localStorage. */
+export function loadCodexTree(): CodexNode[] {
   if (typeof window === "undefined") return [];
-
   try {
-    return JSON.parse(localStorage.getItem(FLAT_KEY) || "[]");
+    return JSON.parse(localStorage.getItem(CODEX_KEY) || "[]");
   } catch {
     return [];
   }
 }
 
-/**
- * Add a new flat Codex entry.
- * @param {{ content: string }} param0
- */
-export function addCodexFlat({ content }) {
+/** Save the Codex tree to localStorage. */
+export function saveCodexTree(tree: CodexNode[]) {
   if (typeof window === "undefined") return;
-
-  const list = loadCodexFlat();
-  list.push({ content, ts: Date.now() });
-  localStorage.setItem(FLAT_KEY, JSON.stringify(list));
+  localStorage.setItem(CODEX_KEY, JSON.stringify(tree));
 }
 
+/** Add a new journey to the Codex tree. */
+export function addCodexJourney({
+  domain,
+  hero,
+  letter,
+}: {
+  domain: string;
+  hero: string;
+  letter: string;
+}) {
+  const tree = loadCodexTree();
+  const id = `journey-${Date.now()}`;
+  const entry: CodexNode = {
+    id,
+    label: `Domain: ${domain}`,
+    ts: Date.now(),
+    children: [
+      {
+        id: `${id}-hero`,
+        label: `Hero: ${hero}`,
+        children: [
+          {
+            id: `${id}-letter`,
+            label: "Reflection Letter",
+            children: [],
+            ts: Date.now(),
+          },
+        ],
+        ts: Date.now(),
+      },
+    ],
+  };
+  // Attach the letter as the deepest child
+  entry.children![0].children![0].children = [
+    { id: `${id}-letter-content`, label: letter, ts: Date.now() },
+  ];
 
-/** ─── TREE STORAGE ──────────────────────────────────────────────────── */
-const TREE_KEY = "echoes_codex_tree";
-
-/** Load the tree‐structured Codex. */
-export function loadCodexTree() {
-  if (typeof window === "undefined") return [];
-
-  try {
-    return JSON.parse(localStorage.getItem(TREE_KEY) || "[]");
-  } catch {
-    return [];
-  }
-}
-
-/**
- * Initialize a Codex tree given the discovered superpower.
- * @param {string} superpower
- * @returns {Array} new root array
- */
-export function initCodexTree(superpower) {
-  if (typeof window === "undefined") return [];
-
-  const root = { title: `Superpower • ${superpower}`, children: [] };
-  localStorage.setItem(TREE_KEY, JSON.stringify([root]));
-  return [root];
-}
-
-/**
- * Add a new branch under the specified path in the Codex tree.
- * @param {number[]} path – array of child‐indexes to traverse
- * @param {string} title  – new branch title
- */
-export function addCodexBranch(path = [], title) {
-  if (typeof window === "undefined") return;
-
-  let tree = loadCodexTree();
-  if (!tree.length) return;
-
-  // navigate to parent node
-  let node = tree[0];
-  for (const idx of path) {
-    node = node.children?.[idx];
-    if (!node) return;
-  }
-
-  // append new child
-  node.children = node.children || [];
-  node.children.push({ title, children: [] });
-  localStorage.setItem(TREE_KEY, JSON.stringify(tree));
+  tree.push(entry);
+  saveCodexTree(tree);
 }
