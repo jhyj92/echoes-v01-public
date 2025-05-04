@@ -46,6 +46,7 @@ export default function Interviewer({ onComplete }: Props) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [qIdx]);
 
+  // Increment hue shift for subtle UI effect
   const hueShift = () => {
     const curr = parseInt(
       getComputedStyle(document.documentElement).getPropertyValue("--hue-shift") || "0",
@@ -54,6 +55,7 @@ export default function Interviewer({ onComplete }: Props) {
     document.documentElement.style.setProperty("--hue-shift", `${(curr + 20) % 360}deg`);
   };
 
+  // Remove markdown/meta characters from AI response
   const stripMeta = (raw: string) =>
     raw
       .replace(/\*\*(.*?)\*\*/g, "$1")
@@ -111,11 +113,11 @@ export default function Interviewer({ onComplete }: Props) {
 
   if (question === null && !loading) {
     return (
-      <section className="w-full max-w-3xl space-y-6 text-gold">
+      <section className="w-full max-w-3xl space-y-6 text-gold" role="region" aria-live="polite">
         <p>Interview complete! Thank you for sharing.</p>
         <button
           onClick={handleRestart}
-          className="px-4 py-2 border border-gold rounded hover:bg-gold hover:text-black"
+          className="px-4 py-2 border border-gold rounded hover:bg-gold hover:text-black focus:outline-none focus:ring-2 focus:ring-gold"
         >
           Restart Interview
         </button>
@@ -129,7 +131,7 @@ export default function Interviewer({ onComplete }: Props) {
       {error && (
         <p className="text-red-500 italic mb-2" role="alert">
           {error}{" "}
-          <button onClick={askNext} className="underline">
+          <button onClick={askNext} className="underline focus:outline-none">
             Retry
           </button>
         </p>
@@ -147,7 +149,7 @@ export default function Interviewer({ onComplete }: Props) {
           value={answer}
           onChange={(e) => setAnswer(e.target.value)}
           placeholder="Type your answer and press ↵"
-          className="w-full rounded bg-transparent border border-gold/40 px-3 py-2 focus:outline-none"
+          className="w-full rounded bg-transparent border border-gold/40 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-gold"
           autoFocus
           disabled={loading}
           aria-label={`Answer to question ${qIdx + 1}`}
