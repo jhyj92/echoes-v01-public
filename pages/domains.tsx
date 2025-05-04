@@ -1,4 +1,3 @@
-// pages/domains.tsx
 "use client";
 
 import { useRouter } from "next/router";
@@ -15,7 +14,6 @@ export default function DomainsPage() {
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
 
-  // 1️⃣ Load answers from localStorage or redirect
   useEffect(() => {
     if (typeof window === "undefined") return;
     try {
@@ -30,7 +28,6 @@ export default function DomainsPage() {
     }
   }, [router]);
 
-  // 2️⃣ Fetch 5 domains once answers are ready
   useEffect(() => {
     if (!answers) return;
     setLoading(true);
@@ -49,7 +46,7 @@ export default function DomainsPage() {
         }
         setDomains(suggestions);
       } catch (err) {
-        setError("Failed to load domains. Please try again.");
+        setError("Failed to load domains. Using fallback list.");
         setDomains([
           "Curiosity",
           "Courage",
@@ -63,7 +60,6 @@ export default function DomainsPage() {
     })();
   }, [answers]);
 
-  // While waiting for domains, show overlay
   if (domains === null) {
     return (
       <main className="relative flex items-center justify-center min-h-screen bg-black text-gold">
@@ -72,13 +68,11 @@ export default function DomainsPage() {
     );
   }
 
-  // 3️⃣ Handle domain pick
   function handlePick(domain: string) {
     localStorage.setItem("echoes_domain", domain);
     router.push("/guide");
   }
 
-  // 4️⃣ Render domain options with single selection
   return (
     <main className="relative flex flex-col items-center justify-center min-h-screen px-4 bg-black text-gold">
       <LatencyOverlay />
@@ -87,36 +81,19 @@ export default function DomainsPage() {
       {loading && <p className="italic">The echoes are thinking…</p>}
       {error && <p className="text-red-500 italic mb-4" role="alert">{error}</p>}
       {!loading && (
-        <ul className="w-full max-w-xl space-y-4">
-          {domains.map((domain, i) => (
-            <li
-              key={i}
-              tabIndex={0}
-              onClick={() => setSelected(i)}
-              onKeyDown={e => (e.key === "Enter" || e.key === " ") && setSelected(i)}
-              className={`p-4 border rounded cursor-pointer transition-colors duration-150 ${
-                selected === i
-                  ? "border-gold bg-gold/10 ring-2 ring-gold"
-                  : "border-gold/40"
-              }`}
-              aria-pressed={selected === i}
-              aria-label={`Select domain ${domain}`}
-            >
-              {domain}
-            </li>
-          ))}
-        </ul>
+        <>
+          <DomainSelector domains={domains} onSelect={handlePick} />
+          <button
+            className="btn-secondary mt-4"
+            onClick={() => {
+              localStorage.removeItem("echoes_answers");
+              router.push("/onboarding");
+            }}
+          >
+            Restart Interview
+          </button>
+        </>
       )}
-      <button
-        className="btn-primary w-full py-3 mt-6"
-        disabled={selected === null}
-        onClick={() => {
-          if (selected !== null) handlePick(domains[selected]);
-        }}
-        aria-disabled={selected === null}
-      >
-        Continue
-      </button>
     </main>
   );
 }
