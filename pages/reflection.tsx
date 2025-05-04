@@ -1,10 +1,8 @@
-// pages/reflection.tsx (updated)
-
 import { useEffect, useState } from "react";
 import { useRouter } from "next/router";
-import LatencyOverlay from "../components/LatencyOverlay";
-import Starfield from "../components/Starfield";
-import ReflectionLetter from "../components/ReflectionLetter";
+import LatencyOverlay from "@/components/LatencyOverlay";
+import Starfield from "@/components/Starfield";
+import ReflectionLetter from "@/components/ReflectionLetter";
 
 export default function ReflectionPage() {
   const router = useRouter();
@@ -41,6 +39,7 @@ export default function ReflectionPage() {
         const data = await res.json();
         setLetter(data.letter);
 
+        // Update codex with new letter
         const codex = JSON.parse(localStorage.getItem("echoes_codex") || "[]");
         codex.push(data.letter);
         localStorage.setItem("echoes_codex", JSON.stringify(codex));
@@ -64,7 +63,6 @@ export default function ReflectionPage() {
     setLetter(null);
     setError(null);
     setLoading(true);
-    // Trigger useEffect refetch by router change or force reload
     router.replace(router.asPath);
   };
 
