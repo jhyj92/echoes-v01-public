@@ -8,13 +8,14 @@ import { loadHistory, saveHistory, ChatMessage } from "@/utils/chatManager";
 export interface HeroChatProps {
   scenario: string;
   hero: string;
+  superpower: string;
 }
 
 const STORAGE_HISTORY_KEY = "echoes_history";
 const STORAGE_SCENARIO_KEY = "echoes_scenario";
 const STORAGE_HERO_KEY = "echoes_hero";
 
-export default function HeroChat({ scenario, hero }: HeroChatProps) {
+export default function HeroChat({ scenario, hero, superpower }: HeroChatProps) {
   const router = useRouter();
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState("");
@@ -30,14 +31,14 @@ export default function HeroChat({ scenario, hero }: HeroChatProps) {
       if (heroCount >= 10) setPaused(true);
     } else {
       const init: ChatMessage[] = [
-        { from: "hero", text: `You find yourself in “${scenario}.” ${hero} awaits your counsel.` },
+        { from: "hero", text: `You find yourself in “${scenario}.” ${hero} awaits your counsel. They have heard of your superpower: "${superpower}".` },
       ];
       setMessages(init);
       saveHistory(STORAGE_HISTORY_KEY, init);
       localStorage.setItem(STORAGE_SCENARIO_KEY, scenario);
       localStorage.setItem(STORAGE_HERO_KEY, hero);
     }
-  }, [scenario, hero]);
+  }, [scenario, hero, superpower]);
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
@@ -58,6 +59,7 @@ export default function HeroChat({ scenario, hero }: HeroChatProps) {
         body: JSON.stringify({
           scenario,
           hero,
+          superpower,
           history: updated,
           userMessage: userMsg.text,
         }),
