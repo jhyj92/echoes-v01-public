@@ -27,7 +27,7 @@ export default function DomainSelector({ domains, onSelect }: DomainSelectorProp
             className={`border rounded px-6 py-3 text-gold transition
               ${selected === i
                 ? "border-gold bg-gold/10 ring-2 ring-gold"
-                : "border-gold/40 hover:bg-gold hover:text-black focus:ring-2 focus:ring-gold"
+                : "border-gold/40 hover:bg-gold hover:text-black focus:ring-2 focus:ring-gold focus:outline-none"
               }`}
             aria-pressed={selected === i}
             aria-label={`Select domain ${domain}`}
