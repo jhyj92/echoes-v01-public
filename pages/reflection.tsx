@@ -32,6 +32,7 @@ export default function ReflectionPage() {
             history: JSON.parse(history),
             scenario,
             hero,
+            superpower, // Pass superpower to API
           }),
         });
 
