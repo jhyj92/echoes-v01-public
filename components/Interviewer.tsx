@@ -8,21 +8,44 @@ interface Props {
   onComplete(answers: string[]): void;
 }
 
+const MAX_QUESTIONS = 10;
+const STORAGE_KEY = "echoes_answers";
+
 export default function Interviewer({ onComplete }: Props) {
-  const [qIdx, setQIdx] = useState(0);
+  const [qIdx, setQIdx] = useState<number>(0);
   const [question, setQuestion] = useState<string | null>(null);
   const [answer, setAnswer] = useState("");
   const [answers, setAnswers] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Ask first question on mount and when qIdx changes
+  // Load saved answers and question index on mount
   useEffect(() => {
+    try {
+      const saved = localStorage.getItem(STORAGE_KEY);
+      if (saved) {
+        const parsed = JSON.parse(saved) as string[];
+        setAnswers(parsed);
+        setQIdx(parsed.length);
+      } else {
+        setQIdx(0);
+      }
+    } catch {
+      setQIdx(0);
+    }
+  }, []);
+
+  // Fetch next question whenever qIdx changes
+  useEffect(() => {
+    if (qIdx >= MAX_QUESTIONS) {
+      setLoading(false);
+      setQuestion(null);
+      return;
+    }
     askNext();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [qIdx]);
 
-  /* ---- Helpers --------------------------------------------------------- */
   const hueShift = () => {
     const curr = parseInt(
       getComputedStyle(document.documentElement).getPropertyValue("--hue-shift") || "0",
@@ -38,7 +61,6 @@ export default function Interviewer({ onComplete }: Props) {
       .replace(/\*/g, "")
       .trim();
 
-  /* ---- Fetch Next Question --------------------------------------------- */
   async function askNext() {
     setLoading(true);
     setError(null);
@@ -60,7 +82,6 @@ export default function Interviewer({ onComplete }: Props) {
     }
   }
 
-  /* ---- Handle Submission ---------------------------------------------- */
   const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!answer.trim() || loading) return;
@@ -70,29 +91,53 @@ export default function Interviewer({ onComplete }: Props) {
     setAnswer("");
     hueShift();
 
-    if (qIdx === 9) {
-      localStorage.setItem("echoes_answers", JSON.stringify(updated));
+    // Save progress
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
+
+    if (qIdx + 1 >= MAX_QUESTIONS) {
       onComplete(updated);
     } else {
       setQIdx(qIdx + 1);
     }
   };
 
-  /* ---- Render ---------------------------------------------------------- */
-  if (question === null) return null;
+  const handleRestart = () => {
+    setAnswers([]);
+    setQIdx(0);
+    setAnswer("");
+    setError(null);
+    localStorage.removeItem(STORAGE_KEY);
+  };
+
+  if (question === null && !loading) {
+    return (
+      <section className="w-full max-w-3xl space-y-6 text-gold">
+        <p>Interview complete! Thank you for sharing.</p>
+        <button
+          onClick={handleRestart}
+          className="px-4 py-2 border border-gold rounded hover:bg-gold hover:text-black"
+        >
+          Restart Interview
+        </button>
+      </section>
+    );
+  }
 
   return (
-    <section className="w-full max-w-3xl space-y-6 text-gold">
+    <section className="w-full max-w-3xl space-y-6 text-gold" aria-live="polite">
       {loading && <LatencyOverlay />}
       {error && (
         <p className="text-red-500 italic mb-2" role="alert">
-          {error}
+          {error}{" "}
+          <button onClick={askNext} className="underline">
+            Retry
+          </button>
         </p>
       )}
 
       <div
         dangerouslySetInnerHTML={{
-          __html: `<strong>Question ${qIdx + 1} of 10</strong><br/>${question}`,
+          __html: `<strong>Question ${qIdx + 1} of ${MAX_QUESTIONS}</strong><br/>${question}`,
         }}
       />
 
