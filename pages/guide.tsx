@@ -1,4 +1,5 @@
 "use client";
+
 import { useEffect, useState } from "react";
 import { useRouter } from "next/router";
 import Starfield from "@/components/Starfield";
@@ -14,7 +15,6 @@ export default function GuidePage() {
   const [error, setError] = useState<string | null>(null);
   const [heroOptions, setHeroOptions] = useState<HeroOption[] | null>(null);
 
-  // Load selected domain from localStorage
   useEffect(() => {
     if (!router.isReady) return;
     const storedDomain = localStorage.getItem("echoes_domain");
@@ -23,9 +23,17 @@ export default function GuidePage() {
       return;
     }
     setDomain(storedDomain);
+
+    const storedGuide = localStorage.getItem("echoes_guide");
+    if (storedGuide) {
+      try {
+        setReflections(JSON.parse(storedGuide));
+      } catch {
+        setReflections([]);
+      }
+    }
   }, [router.isReady]);
 
-  // After 10 reflections, fetch hero options
   useEffect(() => {
     if (reflections.length === 10 && domain) {
       (async () => {
@@ -37,6 +45,7 @@ export default function GuidePage() {
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ reflections, domain }),
           });
+          if (!res.ok) throw new Error(`API error: ${res.status}`);
           const data = await res.json();
           setHeroOptions(data.options);
         } catch (err) {
@@ -48,17 +57,22 @@ export default function GuidePage() {
     }
   }, [reflections, domain]);
 
-  // Handle reflection completion
   const handleComplete = (answers: string[]) => {
     setReflections(answers);
     localStorage.setItem("echoes_guide", JSON.stringify(answers));
   };
 
-  // Handle hero selection (proceed to next step)
   const handleHeroSelect = (hero: string, scenario: string) => {
     localStorage.setItem("echoes_hero", hero);
     localStorage.setItem("echoes_scenario", scenario);
     router.push("/hero");
+  };
+
+  const handleRestart = () => {
+    localStorage.removeItem("echoes_guide");
+    localStorage.removeItem("echoes_hero");
+    localStorage.removeItem("echoes_scenario");
+    router.replace("/domains");
   };
 
   if (!domain) return null;
@@ -69,7 +83,6 @@ export default function GuidePage() {
       <LatencyOverlay />
       {error && <div className="text-red-500 italic mb-4">{error}</div>}
 
-      {/* Reflection questions */}
       {reflections.length < 10 && (
         <GuideIntro
           domain={domain}
@@ -78,10 +91,19 @@ export default function GuidePage() {
         />
       )}
 
-      {/* Hero selection */}
       {reflections.length === 10 && heroOptions && (
-        <HeroSelector options={heroOptions} onSelect={handleHeroSelect} />
+        <>
+          <HeroSelector options={heroOptions} onSelect={handleHeroSelect} />
+          <button
+            className="btn-secondary mt-6"
+            onClick={handleRestart}
+          >
+            Restart Guide
+          </button>
+        </>
       )}
+
+      {loading && <p className="italic mt-4">The echoes are preparing your next step…</p>}
     </main>
   );
 }
