@@ -18,7 +18,7 @@ function nextOrKey() {
 
 const gemini = new GoogleGenAI({ apiKey: process.env.GEMINI_KEY! });
 
-async function fetchWithTimeout(url: string, opts: any = {}, ms = 2000) {
+async function fetchWithTimeout(url: string, opts: any = {}, ms = 3000) {
   const ctrl = new AbortController();
   const id = setTimeout(() => ctrl.abort(), ms);
   try {
