@@ -1,113 +1,86 @@
+"use client";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/router";
-import LatencyOverlay from "../components/LatencyOverlay";
-import Starfield from "../components/Starfield";
-import GuideIntro from "../components/GuideIntro";
-import HeroSelector, { HeroOption } from "../components/HeroSelector";
-import HeroChat from "../components/HeroChat";
+import Starfield from "@/components/Starfield";
+import LatencyOverlay from "@/components/LatencyOverlay";
+import GuideIntro from "@/components/GuideIntro";
+import HeroSelector, { HeroOption } from "@/components/HeroSelector";
 
 export default function GuidePage() {
   const router = useRouter();
   const [domain, setDomain] = useState<string | null>(null);
-  const [scenario, setScenario] = useState<string | null>(null);
-  const [hero, setHero] = useState<string | null>(null);
-  const [heroOptions, setHeroOptions] = useState<HeroOption[] | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [reflections, setReflections] = useState<string[]>([]);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [heroOptions, setHeroOptions] = useState<HeroOption[] | null>(null);
 
-  // On mount, load domain, hero, scenario from localStorage
+  // Load selected domain from localStorage
   useEffect(() => {
     if (!router.isReady) return;
-
-    try {
-      const storedDomain = localStorage.getItem("echoes_domain");
-      const storedScenario = localStorage.getItem("echoes_scenario");
-      const storedHero = localStorage.getItem("echoes_hero");
-
-      if (!storedDomain) {
-        router.replace("/domains");
-        return;
-      }
-
-      setDomain(storedDomain);
-
-      if (storedScenario && storedHero) {
-        setScenario(storedScenario);
-        setHero(storedHero);
-      } else {
-        // If domain changes, reset hero/scenario
-        setScenario(null);
-        setHero(null);
-        localStorage.removeItem("echoes_hero");
-        localStorage.removeItem("echoes_scenario");
-      }
-    } catch (error) {
-      console.error("Error accessing localStorage:", error);
-    } finally {
-      setIsLoading(false);
+    const storedDomain = localStorage.getItem("echoes_domain");
+    if (!storedDomain) {
+      router.replace("/domains");
+      return;
     }
+    setDomain(storedDomain);
   }, [router.isReady]);
 
-  // After 10 reflections, get hero options from API
-  const handleReflectionsComplete = async (reflections: string[]) => {
-    setError(null);
-    setHeroOptions(null);
-    setIsLoading(true);
-    try {
-      localStorage.setItem("echoes_guide", JSON.stringify(reflections));
-      const res = await fetch("/api/suggestHeroScenario", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ reflections, domain }),
-      });
-      if (!res.ok) throw new Error("Failed to fetch hero options.");
-      const data = await res.json();
-      setHeroOptions(data.options);
-    } catch (error) {
-      setError("Failed to fetch hero options. Please try again.");
-    } finally {
-      setIsLoading(false);
+  // After 10 reflections, fetch hero options
+  useEffect(() => {
+    if (reflections.length === 10 && domain) {
+      (async () => {
+        setLoading(true);
+        setError(null);
+        try {
+          const res = await fetch("/api/suggestHeroScenario", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ reflections, domain }),
+          });
+          const data = await res.json();
+          setHeroOptions(data.options);
+        } catch (err) {
+          setError("Failed to fetch hero options.");
+        } finally {
+          setLoading(false);
+        }
+      })();
     }
+  }, [reflections, domain]);
+
+  // Handle reflection completion
+  const handleComplete = (answers: string[]) => {
+    setReflections(answers);
+    localStorage.setItem("echoes_guide", JSON.stringify(answers));
   };
 
-  // When user selects a hero/scenario
+  // Handle hero selection (proceed to next step)
   const handleHeroSelect = (hero: string, scenario: string) => {
     localStorage.setItem("echoes_hero", hero);
     localStorage.setItem("echoes_scenario", scenario);
-    setHero(hero);
-    setScenario(scenario);
+    router.push("/hero");
   };
-
-  if (!router.isReady || isLoading) {
-    return (
-      <main className="relative flex flex-col items-center justify-center min-h-screen px-4 bg-black text-gold">
-        <LatencyOverlay />
-        <Starfield />
-        <div className="text-center">Loading your journey...</div>
-      </main>
-    );
-  }
 
   if (!domain) return null;
 
   return (
     <main className="relative flex flex-col items-center justify-center min-h-screen px-4 bg-black text-gold">
-      <LatencyOverlay />
       <Starfield />
-      {error && (
-        <div className="text-red-500 italic mb-4" role="alert">{error}</div>
+      <LatencyOverlay />
+      {error && <div className="text-red-500 italic mb-4">{error}</div>}
+
+      {/* Reflection questions */}
+      {reflections.length < 10 && (
+        <GuideIntro
+          domain={domain}
+          onComplete={handleComplete}
+          initialAnswers={reflections}
+        />
       )}
 
-      {!scenario && !heroOptions && (
-        <GuideIntro domain={domain} onSelect={handleReflectionsComplete} />
-      )}
-
-      {!scenario && heroOptions && (
+      {/* Hero selection */}
+      {reflections.length === 10 && heroOptions && (
         <HeroSelector options={heroOptions} onSelect={handleHeroSelect} />
-      )}
-
-      {scenario && hero && (
-        <HeroChat hero={hero} scenario={scenario} />
       )}
     </main>
   );
