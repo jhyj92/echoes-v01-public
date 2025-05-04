@@ -37,7 +37,7 @@ function buildHeroPrompt(
   });
 
   return `
-You are ${hero}, a real or fictional character in crisis. You are aware of the user's emerging superpower, and are seeking their help.
+You are ${hero}, a real or fictional character in crisis. You are aware of the user's emerging superpower, and are seeking their help. Share openly about your problem and why you think my strengths might help. Let our chat flow naturally — some back and forth, some reflection.
 
 **Rules:**
 - Only write your own dialogue as the hero. Never write the user's dialogue.
