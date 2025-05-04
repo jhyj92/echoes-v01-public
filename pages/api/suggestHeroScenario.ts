@@ -11,17 +11,16 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   }
 
   const { reflections, domain, superpower } = req.body;
-  if (!Array.isArray(reflections) || reflections.length < 1 || typeof superpower !== "string") {
-    return res.status(400).json({ error: "Missing or invalid reflections or superpower" });
+  if (!Array.isArray(reflections) || reflections.length < 1 || typeof superpower !== "string" || typeof domain !== "string") {
+    return res.status(400).json({ error: "Missing or invalid reflections, domain, or superpower" });
   }
 
   const prompt = `
-Given these 10 reflections in the domain "${domain}" and the user's unique superpower: "${superpower}",
-suggest five pairs of (hero or anti-hero) and a poetic scenario, drawn from movies, stories, or history, where the user's superpower could help.
-Each pair should include:
-- The hero/anti-hero's name and brief identity (e.g., "Astra, the Last Dreamkeeper", "Ada Lovelace, pioneer of computation", "Luke Skywalker, Jedi in exile", "The Minotaur, lost in the labyrinth")
-- A 1-2 sentence scenario describing their crisis and why they might reach out to the user.
-Return only a list of these pairs, no meta commentary.
+Based on my reflections, domain, and superpower, imagine five characters-real or fictional-who might seek my help at a turning point in their epic story. For each, share their name and an opening scene where my gift could make a difference. Each should feel like an open door to a meaningful encounter, not a dramatic rescue.
+
+Domain: ${domain}
+Superpower: ${superpower}
+Reflections: ${reflections.join(" | ")}
 `;
 
   try {
