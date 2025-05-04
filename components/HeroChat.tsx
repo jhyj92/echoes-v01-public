@@ -1,5 +1,4 @@
 "use client";
-
 import { useState, useEffect, FormEvent } from "react";
 import { useRouter } from "next/router";
 import fetchWithTimeout from "@/utils/fetchWithTimeout";
@@ -8,9 +7,10 @@ import { loadHistory, saveHistory, ChatMessage } from "@/utils/chatManager";
 
 export interface HeroChatProps {
   scenario: string;
+  hero: string;
 }
 
-export default function HeroChat({ scenario }: HeroChatProps) {
+export default function HeroChat({ scenario, hero }: HeroChatProps) {
   const router = useRouter();
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState("");
@@ -18,29 +18,31 @@ export default function HeroChat({ scenario }: HeroChatProps) {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const stored: ChatMessage[] = loadHistory(scenario);
+    const key = `${scenario}-${hero}`;
+    const stored: ChatMessage[] = loadHistory(key);
     if (stored.length) {
       setMessages(stored);
     } else {
       const init: ChatMessage[] = [
         {
           from: "hero",
-          text: `You find yourself in “${scenario}.” The hero awaits your counsel.`,
+          text: `You find yourself in “${scenario}.” ${hero} awaits your counsel.`,
         },
       ];
       setMessages(init);
-      saveHistory(scenario, init);
+      saveHistory(key, init);
     }
-  }, [scenario]);
+  }, [scenario, hero]);
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     if (!input.trim() || loading) return;
 
+    const key = `${scenario}-${hero}`;
     const userMsg: ChatMessage = { from: "user", text: input.trim() };
     const updated = [...messages, userMsg];
     setMessages(updated);
-    saveHistory(scenario, updated);
+    saveHistory(key, updated);
     setInput("");
     setLoading(true);
     setError(null);
@@ -51,6 +53,7 @@ export default function HeroChat({ scenario }: HeroChatProps) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           scenario,
+          hero,
           history: messages, // previous messages
           userMessage: userMsg.text, // current message
         }),
@@ -60,7 +63,7 @@ export default function HeroChat({ scenario }: HeroChatProps) {
       const heroMsg: ChatMessage = { from: "hero", text: reply };
       const withHero = [...updated, heroMsg];
       setMessages(withHero);
-      saveHistory(scenario, withHero);
+      saveHistory(key, withHero);
 
       if (done) router.push("/reflection");
     } catch (err) {
@@ -72,7 +75,7 @@ export default function HeroChat({ scenario }: HeroChatProps) {
       };
       const withFallback = [...updated, fallback];
       setMessages(withFallback);
-      saveHistory(scenario, withFallback);
+      saveHistory(key, withFallback);
     } finally {
       setLoading(false);
     }
@@ -85,7 +88,7 @@ export default function HeroChat({ scenario }: HeroChatProps) {
       <ul className="space-y-4 w-full max-w-xl">
         {messages.map((m, i) => (
           <li key={i} className={m.from === "hero" ? "italic" : ""}>
-            <strong>{m.from === "hero" ? "Hero" : "You"}:</strong> {m.text}
+            <strong>{m.from === "hero" ? hero : "You"}:</strong> {m.text}
           </li>
         ))}
       </ul>
