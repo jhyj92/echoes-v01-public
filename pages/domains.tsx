@@ -10,10 +10,10 @@ export default function DomainsPage() {
   const router = useRouter();
   const [answers, setAnswers] = useState<string[] | null>(null);
   const [domains, setDomains] = useState<string[] | null>(null);
-  const [selected, setSelected] = useState<number | null>(null);
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
 
+  // Load answers from localStorage or redirect
   useEffect(() => {
     if (typeof window === "undefined") return;
     try {
@@ -28,10 +28,12 @@ export default function DomainsPage() {
     }
   }, [router]);
 
+  // Fetch domains once answers are ready
   useEffect(() => {
     if (!answers) return;
     setLoading(true);
     setError(null);
+
     (async () => {
       try {
         const res = await fetch("/api/domains", {
