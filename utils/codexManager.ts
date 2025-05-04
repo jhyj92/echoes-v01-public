@@ -3,6 +3,7 @@ export interface CodexNode {
   label: string;
   children?: CodexNode[];
   ts?: number; // timestamp
+  note?: string; // user note
 }
 
 const CODEX_KEY = "echoes_codex_tree";
@@ -48,11 +49,13 @@ export function addCodexJourney({
   hero,
   superpower,
   letter,
+  note,
 }: {
   domain: string;
   hero: string;
   superpower: string;
   letter: string;
+  note?: string;
 }): void {
   const tree = loadCodexTree();
   const timestamp = Date.now();
@@ -108,6 +111,7 @@ export function addCodexJourney({
     id: `${id}-letter-${Date.now()}`,
     label: "Reflection Letter",
     ts: timestamp,
+    note,
     children: [
       {
         id: `${id}-letter-content-${Date.now()}`,
@@ -121,4 +125,40 @@ export function addCodexJourney({
   heroNode.children.push(letterNode);
 
   saveCodexTree(tree);
+}
+
+// Edit a node’s note or label by id
+export function editCodexNode(id: string, newLabel?: string, newNote?: string) {
+  const tree = loadCodexTree();
+  function editNode(nodes: CodexNode[]) {
+    for (const node of nodes) {
+      if (node.id === id) {
+        if (newLabel !== undefined) node.label = newLabel;
+        if (newNote !== undefined) node.note = newNote;
+        return true;
+      }
+      if (node.children && editNode(node.children)) return true;
+    }
+    return false;
+  }
+  editNode(tree);
+  saveCodexTree(tree);
+}
+
+// Delete a node (and its children) by id
+export function deleteCodexNode(id: string) {
+  let changed = false;
+  function removeNode(nodes: CodexNode[]): CodexNode[] {
+    return nodes.filter(node => {
+      if (node.id === id) {
+        changed = true;
+        return false;
+      }
+      if (node.children) node.children = removeNode(node.children);
+      return true;
+    });
+  }
+  const tree = loadCodexTree();
+  const newTree = removeNode(tree);
+  if (changed) saveCodexTree(newTree);
 }
