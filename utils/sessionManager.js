@@ -1,8 +1,8 @@
 /**
- * Simple localStorage wrapper with SSR guard and error handling
+ * Simple localStorage wrapper with SSR guard and error handling.
  */
 
-export function getSessionValue(key, defaultValue = null) {
+export function getSessionValue<T = any>(key: string, defaultValue: T | null = null): T | null {
   if (typeof window === "undefined") return defaultValue;
   try {
     const stored = localStorage.getItem(key);
@@ -13,22 +13,20 @@ export function getSessionValue(key, defaultValue = null) {
   }
 }
 
-export function setSessionValue(key, value) {
-  if (typeof window !== "undefined") {
-    try {
-      localStorage.setItem(key, JSON.stringify(value));
-    } catch (err) {
-      console.warn(`setSessionValue: failed to serialize key "${key}"`, err);
-    }
+export function setSessionValue(key: string, value: any): void {
+  if (typeof window === "undefined") return;
+  try {
+    localStorage.setItem(key, JSON.stringify(value));
+  } catch (err) {
+    console.warn(`setSessionValue: failed to serialize key "${key}"`, err);
   }
 }
 
-export function clearSessionValue(key) {
-  if (typeof window !== "undefined") {
-    try {
-      localStorage.removeItem(key);
-    } catch (err) {
-      console.warn(`clearSessionValue: failed to remove key "${key}"`, err);
-    }
+export function clearSessionValue(key: string): void {
+  if (typeof window === "undefined") return;
+  try {
+    localStorage.removeItem(key);
+  } catch (err) {
+    console.warn(`clearSessionValue: failed to remove key "${key}"`, err);
   }
 }
