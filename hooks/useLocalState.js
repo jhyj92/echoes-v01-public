@@ -5,11 +5,10 @@ import { useState, useEffect } from "react";
  * Persist state in localStorage (SSR-safe).
  * Warns on read/write errors.
  */
-export function useLocalState(key, initialValue) {
-  // Lazy-init state from localStorage (or fallback to initialValue)
-  const [value, setValue] = useState(() => {
+export function useLocalState<T>(key: string, initialValue: T): [T, React.Dispatch<React.SetStateAction<T>>] {
+  const [value, setValue] = useState<T>(() => {
     if (typeof window === "undefined") {
-      // SSR-return initial on server
+      // SSR: return initial on server
       return initialValue;
     }
     try {
@@ -21,7 +20,6 @@ export function useLocalState(key, initialValue) {
     }
   });
 
-  // Whenever `value` changes, write it back to localStorage
   useEffect(() => {
     if (typeof window === "undefined") return;
     try {
