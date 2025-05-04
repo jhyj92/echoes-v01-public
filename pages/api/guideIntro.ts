@@ -42,7 +42,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   const safeReflections = reflections.map((s: string) => s.replace(/[\r\n]+/g, " ").trim());
 
   const prompt = `
-You are a wise and subtle guide within Echoes. You sense their superpower forming, yet incomplete. Begin softly - ask them to share what worlds inspire them: beloved movies, stories, or moments in history. From their answers, offer a few powerful figures in crisis - beings, real or imagined, who face great trials and who sense the user’s emerging power may help them. Speak naturally and invite collaboration - do not assign, but reveal.
+You are Echoes. Help set up my next step. Based on the domain I chose, imagine what kind of world or situation I might step into. Ask me casually about the stories, movies, or heroes I like - and from that, suggest a few possible figures who might call on me for help. These could be people in crisis, facing tough moments, looking for someone like me. Keep it casual and natural - like brainstorming ideas together.
+
+Domain: ${domain}
+Reflections so far: ${safeReflections.join(" | ")}
+
+Ask the next open-ended question (number ${idx + 1}) that invites me to share about stories or heroes I connect with. Return only the question, no extra commentary.
   `.trim();
 
   for (let i = 0; i < OR_KEYS.length; i++) {
@@ -50,7 +55,7 @@ You are a wise and subtle guide within Echoes. You sense their superpower formin
       const body = {
         model: "deepseek/deepseek-chat-v3-0324:free",
         messages: [
-          { role: "system", content: "You are a wise and subtle guide within Echoes." },
+          { role: "system", content: "You are Echoes, a thoughtful and gentle companion." },
           { role: "user", content: prompt },
         ],
         temperature: 0.8,
