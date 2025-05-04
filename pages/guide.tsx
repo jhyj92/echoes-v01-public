@@ -48,7 +48,7 @@ export default function GuidePage() {
           if (!res.ok) throw new Error(`API error: ${res.status}`);
           const data = await res.json();
           setHeroOptions(data.options);
-        } catch (err) {
+        } catch {
           setError("Failed to fetch hero options.");
         } finally {
           setLoading(false);
