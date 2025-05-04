@@ -1,7 +1,5 @@
-// utils/sessionManager.js
-
 /**
- * Simple localStorage wrapper with SSR guard
+ * Simple localStorage wrapper with SSR guard and error handling
  */
 
 export function getSessionValue(key, defaultValue = null) {
@@ -9,7 +7,8 @@ export function getSessionValue(key, defaultValue = null) {
   try {
     const stored = localStorage.getItem(key);
     return stored ? JSON.parse(stored) : defaultValue;
-  } catch {
+  } catch (err) {
+    console.warn(`getSessionValue: failed to parse key "${key}"`, err);
     return defaultValue;
   }
 }
@@ -18,8 +17,8 @@ export function setSessionValue(key, value) {
   if (typeof window !== "undefined") {
     try {
       localStorage.setItem(key, JSON.stringify(value));
-    } catch {
-      // ignore write errors
+    } catch (err) {
+      console.warn(`setSessionValue: failed to serialize key "${key}"`, err);
     }
   }
 }
@@ -28,8 +27,8 @@ export function clearSessionValue(key) {
   if (typeof window !== "undefined") {
     try {
       localStorage.removeItem(key);
-    } catch {
-      // ignore remove errors
+    } catch (err) {
+      console.warn(`clearSessionValue: failed to remove key "${key}"`, err);
     }
   }
 }
