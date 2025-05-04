@@ -3,7 +3,6 @@ import { GoogleGenAI } from "@google/genai";
 import dotenv from "dotenv";
 
 dotenv.config();
-
 const gemini = new GoogleGenAI({ apiKey: process.env.GEMINI_KEY! });
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
@@ -11,14 +10,15 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     return res.status(405).json({ error: "Method not allowed" });
   }
 
-  const { reflections, domain } = req.body;
-  if (!Array.isArray(reflections) || reflections.length < 1) {
-    return res.status(400).json({ error: "Missing or invalid reflections" });
+  const { reflections, domain, superpower } = req.body;
+  if (!Array.isArray(reflections) || reflections.length < 1 || typeof superpower !== "string") {
+    return res.status(400).json({ error: "Missing or invalid reflections or superpower" });
   }
 
   const prompt = `
-Given these 10 reflections: ${reflections.join(" | ")}
-Suggest five pairs of (hero or anti-hero) and a poetic scenario, drawn from movies, stories, or history, where the user's emerging superpower could help. Each pair should include:
+Given these 10 reflections in the domain "${domain}" and the user's unique superpower: "${superpower}",
+suggest five pairs of (hero or anti-hero) and a poetic scenario, drawn from movies, stories, or history, where the user's superpower could help.
+Each pair should include:
 - The hero/anti-hero's name and brief identity (e.g., "Astra, the Last Dreamkeeper", "Ada Lovelace, pioneer of computation", "Luke Skywalker, Jedi in exile", "The Minotaur, lost in the labyrinth")
 - A 1-2 sentence scenario describing their crisis and why they might reach out to the user.
 Return only a list of these pairs, no meta commentary.
@@ -49,7 +49,6 @@ Return only a list of these pairs, no meta commentary.
         return res.status(200).json({ options });
       }
     }
-
     // If no valid options parsed, fallback below
   } catch (error) {
     console.error("suggestHeroScenario error:", error);
