@@ -31,7 +31,7 @@ Ask the next open-ended question (number ${idx + 1}) that gently deepens their s
   `.trim();
 }
 
-async function callOpenRouterModel(model: string, prompt: string, timeout = 2000): Promise<string | null> {
+async function callOpenRouterModel(model: string, prompt: string, timeout = 5000): Promise<string | null> {
   for (let i = 0; i < OR_KEYS.length; i++) {
     try {
       const body = {
