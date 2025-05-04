@@ -1,5 +1,3 @@
-// utils/chatManager.ts
-
 export interface ChatMessage {
   from: "user" | "hero";
   text: string;
