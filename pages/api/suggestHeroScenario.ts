@@ -27,9 +27,9 @@ Return only a list of these pairs, no meta commentary.
       contents: [prompt],
     });
     if (resp?.text?.trim()) {
-      // Parse the response into hero/scenario pairs
+      // Fixed regex: put dash at end of character class
       const options = resp.text.split(/\n+/).map(line => {
-        const match = line.match(/^(.*?)[\-\–-:]+(.*)$/);
+        const match = line.match(/^(.*?)[–:\-]+(.*)$/);
         if (match) {
           return {
             hero: match[1].trim(),
@@ -38,7 +38,9 @@ Return only a list of these pairs, no meta commentary.
         }
         return null;
       }).filter(Boolean);
-      return res.status(200).json({ options });
+      if (options.length > 0) {
+        return res.status(200).json({ options });
+      }
     }
   } catch (error) {
     console.error("suggestHeroScenario error:", error);
