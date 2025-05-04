@@ -40,15 +40,12 @@ export default async function handler(
     return res.status(400).json({ error: "Missing or invalid idx, domain, or reflections" });
   }
 
-  // Sanitize reflections
   const safeReflections = reflections.map((s: string) => s.replace(/[\r\n]+/g, " ").trim());
 
-  // New poetic prompt
   const prompt = `
 You are a wise and subtle guide within Echoes. You sense their superpower forming, yet incomplete. Begin softly - ask them to share what worlds inspire them: beloved movies, stories, or moments in history. From their answers, offer a few powerful figures in crisis - beings, real or imagined, who face great trials and who sense the user’s emerging power may help them. Speak naturally and invite collaboration - do not assign, but reveal.
   `.trim();
 
-  // 1️⃣ Primary: OpenRouter deepseek-chat-v3-0324:free
   for (let i = 0; i < OR_KEYS.length; i++) {
     try {
       const body = {
@@ -86,58 +83,6 @@ You are a wise and subtle guide within Echoes. You sense their superpower formin
     }
   }
 
-  // 2️⃣ Secondary: Google Gemini 2.0 Flash Lite
-  try {
-    const resp = await gemini.models.generateContent({
-      model: "gemini-2.0-flash-lite",
-      contents: [prompt],
-    });
-
-    if (resp && resp.text) {
-      return res.status(200).json({ question: resp.text.trim(), modelUsed: "gemini-2.0-flash-lite" });
-    }
-  } catch (error) {
-    console.error("Gemini 2.0 error:", error);
-  }
-
-  // 3️⃣ Tertiary: OpenRouter meta-llama/llama-4-scout:free
-  for (let i = 0; i < OR_KEYS.length; i++) {
-    try {
-      const body = {
-        model: "meta-llama/llama-4-scout:free",
-        messages: [
-          { role: "system", content: "You are a wise and subtle guide within Echoes." },
-          { role: "user", content: prompt },
-        ],
-        temperature: 0.8,
-      };
-
-      const r = await fetchWithTimeout(
-        "https://openrouter.ai/api/v1/chat/completions",
-        {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${nextOrKey()}`,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify(body),
-        },
-        2000
-      );
-
-      if (!r.ok) continue;
-
-      const { choices } = await r.json();
-      const question = choices?.[0]?.message?.content?.trim();
-
-      if (question) {
-        return res.status(200).json({ question, modelUsed: "meta-llama/llama-4-scout:free" });
-      }
-    } catch (error) {
-      console.error("Llama-4-Scout error:", error);
-    }
-  }
-
-  // 4️⃣ Hardcoded fallback
+  // Fallback question
   res.status(200).json({ question: "Reflect on a moment you felt truly aligned.", modelUsed: "hardcoded-fallback" });
 }
