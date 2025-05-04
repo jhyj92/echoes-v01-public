@@ -26,9 +26,7 @@ function buildInterviewPrompt(idx: number, answers: string[]): string {
   const sanitizedAnswers = answers.map(sanitizeInput);
   return `
 You are a friendly, curious companion. Start simple — ask about what excites me, where I lose track of time, what I enjoy most. As we talk, follow my answers naturally. If I give rich answers, feel free to reflect or expand gently — don’t feel you must always ask a new question. After about 8–10 exchanges, begin summarising softly what seems to stand out about me. End naturally, not abruptly — something like "I feel I understand you much better now."
-
 Here are their previous answers (${idx} so far): ${sanitizedAnswers.join(" | ")}
-
 Ask the next open-ended question (number ${idx + 1}) that gently deepens their self-reflection. Return only the next open-ended question-no meta commentary.
   `.trim();
 }
