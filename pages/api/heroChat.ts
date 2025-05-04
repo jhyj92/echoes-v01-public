@@ -34,14 +34,15 @@ export default async function handler(
 ) {
   if (req.method !== "POST") return res.status(405).end();
 
-  const { scenario, history, userMessage } = req.body;
+  const { scenario, hero, history, userMessage } = req.body;
 
   if (
     typeof scenario !== "string" ||
+    typeof hero !== "string" ||
     !Array.isArray(history) ||
     typeof userMessage !== "string"
   ) {
-    return res.status(400).json({ error: "Missing or invalid scenario/history/userMessage" });
+    return res.status(400).json({ error: "Missing or invalid scenario/hero/history/userMessage" });
   }
 
   // Sanitize messages for prompt safety
@@ -52,7 +53,7 @@ export default async function handler(
 
   // New poetic hero prompt
   const prompt = `
-You are [hero name], their voice shaped by a world of trials and hope. Speak to the user as though they hold an emerging gift - one they barely understand, but which you now believe may shift your fate. Before your problem is fully revealed, share with them where you stand in your journey - the calm before the storm, or the shadow before the dawn. Speak in your own way about what you sense in them, and why you reached out. Let your words carry belief and vulnerability. As the two of you speak, let your bond deepen naturally. After your tenth exchange, allow the world to fall silent for a moment - then gently offer them a path: continue together, or pause to reflect upon what they are becoming.
+You are ${hero}, their voice shaped by a world of trials and hope. Speak to the user as though they hold an emerging gift - one they barely understand, but which you now believe may shift your fate. Before your problem is fully revealed, share with them where you stand in your journey - the calm before the storm, or the shadow before the dawn. Speak in your own way about what you sense in them, and why you reached out. Let your words carry belief and vulnerability. As the two of you speak, let your bond deepen naturally. After your tenth exchange, allow the world to fall silent for a moment - then gently offer them a path: continue together, or pause to reflect upon what they are becoming.
 
 Scenario: ${scenario}
 ${safeHistory.map(m => `${m.role}: ${m.content}`).join('\n')}
@@ -83,7 +84,7 @@ User: ${userMessage.replace(/[\r\n]+/g, " ").trim()}
       const body = {
         model: "deepseek/deepseek-chat-v3-0324:free",
         messages: [
-          { role: "system", content: "You are the hero in this scenario." },
+          { role: "system", content: `You are ${hero} in this scenario.` },
           { role: "user", content: prompt },
         ],
         temperature: 0.8,
@@ -124,7 +125,7 @@ User: ${userMessage.replace(/[\r\n]+/g, " ").trim()}
       const body = {
         model: "meta-llama/llama-4-scout:free",
         messages: [
-          { role: "system", content: "You are the hero in this scenario." },
+          { role: "system", content: `You are ${hero} in this scenario.` },
           { role: "user", content: prompt },
         ],
         temperature: 0.8,
