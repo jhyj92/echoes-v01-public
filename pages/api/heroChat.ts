@@ -6,7 +6,7 @@ dotenv.config();
 
 const OR_KEYS = (process.env.OPENROUTER_KEYS || "")
   .split(",")
-  .map((k) => k.trim())
+  .map(k => k.trim())
   .filter(Boolean);
 
 let orIndex = 0;
