@@ -1,112 +1,73 @@
 "use client";
-
-import { useEffect, useState } from "react";
-import fetchWithTimeout from "@/utils/fetchWithTimeout";
+import { useEffect, useState, FormEvent } from "react";
 import LatencyOverlay from "@/components/LatencyOverlay";
 
-export interface GuideIntroProps {
+interface GuideIntroProps {
   domain: string;
-  onSelect: (reflections: string[]) => void;
+  onComplete: (answers: string[]) => void;
+  initialAnswers?: string[];
 }
 
-export default function GuideIntro({ domain, onSelect }: GuideIntroProps) {
-  const [idx, setIdx] = useState(0);
+export default function GuideIntro({ domain, onComplete, initialAnswers = [] }: GuideIntroProps) {
+  const [qIdx, setQIdx] = useState(initialAnswers.length);
   const [question, setQuestion] = useState<string | null>(null);
+  const [answer, setAnswer] = useState("");
+  const [answers, setAnswers] = useState<string[]>(initialAnswers);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [answers, setAnswers] = useState<string[]>(() => {
-    // Optional: load from localStorage for persistence
-    if (typeof window !== "undefined") {
-      try {
-        const stored = localStorage.getItem("echoes_guide");
-        return stored ? JSON.parse(stored) : [];
-      } catch {
-        return [];
-      }
-    }
-    return [];
-  });
-  const [input, setInput] = useState("");
 
+  // Fetch next reflection question
   useEffect(() => {
-    if (!domain) return;
-
+    if (qIdx >= 10) return;
     setLoading(true);
     setError(null);
-    fetchWithTimeout("/api/guideIntro", {
+    fetch("/api/guideIntro", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ domain, idx, reflections: answers }),
+      body: JSON.stringify({ idx: qIdx, domain, answers }),
     })
-      .then((res) => res.json())
-      .then((data) => {
-        setQuestion(data.question ?? "");
-      })
-      .catch((err) => {
-        setError("The echoes are silent… Try again soon.");
-        setQuestion("");
-        console.error("GuideIntro API error:", err);
-      })
-      .finally(() => {
-        setLoading(false);
-      });
-  }, [domain, idx, answers]);
+      .then(res => res.json())
+      .then(data => setQuestion(data.question || "…"))
+      .catch(() => setError("Failed to load reflection question."))
+      .finally(() => setLoading(false));
+  }, [qIdx, domain, answers]);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
-    if (!input.trim() || loading) return;
-
-    const updatedAnswers = [...answers, input.trim()];
-    setAnswers(updatedAnswers);
-    setInput("");
-    // Optional: persist to localStorage
-    if (typeof window !== "undefined") {
-      localStorage.setItem("echoes_guide", JSON.stringify(updatedAnswers));
-    }
-
-    if (idx === 9) {
-      onSelect(updatedAnswers);
+    if (!answer.trim() || loading) return;
+    const updated = [...answers, answer.trim()];
+    setAnswers(updated);
+    setAnswer("");
+    if (qIdx === 9) {
+      onComplete(updated);
     } else {
-      setIdx(idx + 1);
+      setQIdx(qIdx + 1);
     }
   };
 
-  if (loading || !question) {
-    return (
-      <div className="flex flex-col items-center">
-        <LatencyOverlay />
-        <p className="italic mt-4">The echoes are guiding you…</p>
-      </div>
-    );
-  }
+  if (qIdx >= 10) return null;
+  if (question === null) return <LatencyOverlay />;
 
   return (
-    <section className="w-full max-w-xl space-y-6 text-gold">
-      <h2 className="text-2xl font-serif mb-4">
-        Reflection {idx + 1} of 10
-      </h2>
-      <div className="mb-6 border-l-4 border-gold/40 pl-4 text-lg italic">
+    <section className="w-full max-w-2xl space-y-6 text-gold">
+      {loading && <LatencyOverlay />}
+      {error && <p className="text-red-500 italic mb-2">{error}</p>}
+      <div>
+        <strong>Reflection {qIdx + 1} of 10</strong>
+        <br />
         {question}
       </div>
-      {error && <div className="text-red-500 italic mb-2">{error}</div>}
       <form onSubmit={handleSubmit}>
         <input
           type="text"
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          placeholder="Type your reflection here..."
+          value={answer}
+          onChange={e => setAnswer(e.target.value)}
+          placeholder="Type your reflection and press ↵"
           className="w-full rounded bg-transparent border border-gold/40 px-3 py-2 focus:outline-none"
           autoFocus
-          aria-label="Your reflection"
           disabled={loading}
+          aria-label={`Reflection ${qIdx + 1}`}
         />
-        <button
-          type="submit"
-          className="btn-primary w-full py-3 mt-4"
-          disabled={loading}
-        >
-          {idx === 9 ? "Finish" : "Next"}
-        </button>
       </form>
     </section>
   );
