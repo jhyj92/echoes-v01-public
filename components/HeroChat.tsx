@@ -1,6 +1,5 @@
 "use client";
-
-import { useState, useEffect, FormEvent } from "react";
+import { useEffect, useState, FormEvent } from "react";
 import { useRouter } from "next/router";
 import fetchWithTimeout from "@/utils/fetchWithTimeout";
 import LatencyOverlay from "@/components/LatencyOverlay";
@@ -23,19 +22,15 @@ export default function HeroChat({ scenario, hero }: HeroChatProps) {
   const [error, setError] = useState<string | null>(null);
   const [paused, setPaused] = useState(false);
 
-  // Load chat history on mount
   useEffect(() => {
     const stored: ChatMessage[] = loadHistory(STORAGE_HISTORY_KEY);
     if (stored.length) {
       setMessages(stored);
-      const heroCount = stored.filter((m) => m.from === "hero").length;
+      const heroCount = stored.filter(m => m.from === "hero").length;
       if (heroCount >= 10) setPaused(true);
     } else {
       const init: ChatMessage[] = [
-        {
-          from: "hero",
-          text: `You find yourself in “${scenario}.” ${hero} awaits your counsel.`,
-        },
+        { from: "hero", text: `You find yourself in “${scenario}.” ${hero} awaits your counsel.` },
       ];
       setMessages(init);
       saveHistory(STORAGE_HISTORY_KEY, init);
@@ -44,7 +39,7 @@ export default function HeroChat({ scenario, hero }: HeroChatProps) {
     }
   }, [scenario, hero]);
 
-  const heroMessageCount = messages.filter((m) => m.from === "hero").length;
+  const heroMessageCount = messages.filter(m => m.from === "hero").length;
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
@@ -77,9 +72,7 @@ export default function HeroChat({ scenario, hero }: HeroChatProps) {
       setMessages(withHero);
       saveHistory(STORAGE_HISTORY_KEY, withHero);
 
-      if (done) {
-        setPaused(true);
-      }
+      if (done) setPaused(true);
     } catch (err) {
       setError("Failed to get a response from the hero. Please try again.");
       console.error("HeroChat API error:", err);
@@ -106,9 +99,7 @@ export default function HeroChat({ scenario, hero }: HeroChatProps) {
 
   const renderMessage = (m: ChatMessage, idx: number) => {
     if (m.from === "hero") {
-      const heroCount = messages
-        .slice(0, idx + 1)
-        .filter((msg) => msg.from === "hero").length;
+      const heroCount = messages.slice(0, idx + 1).filter(msg => msg.from === "hero").length;
       return (
         <li key={idx} className="italic">
           <strong>{`Hero [${heroCount}]:`}</strong> {m.text}
@@ -132,9 +123,7 @@ export default function HeroChat({ scenario, hero }: HeroChatProps) {
 
       {paused ? (
         <section className="mt-6 space-x-4">
-          <p className="mb-4 italic">
-            The hero has paused to reflect on your superpower.
-          </p>
+          <p className="mb-4 italic">The hero has paused to reflect on your superpower.</p>
           <button
             onClick={handleContinue}
             className="btn-primary mr-4"
@@ -159,7 +148,7 @@ export default function HeroChat({ scenario, hero }: HeroChatProps) {
             type="text"
             disabled={loading}
             value={input}
-            onChange={(e) => setInput(e.target.value)}
+            onChange={e => setInput(e.target.value)}
             placeholder="Respond to the hero…"
             className="flex-1 rounded bg-transparent border border-gold/40 px-3 py-2 focus:outline-none"
             autoFocus
