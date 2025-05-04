@@ -10,9 +10,10 @@ const nextConfig = {
     ],
   },
 
-  experimental: {
-    appDir: true,
-  },
+  // Remove the entire experimental block
+  // experimental: {
+  //   appDir: true,
+  // },
 };
 
 module.exports = nextConfig;
