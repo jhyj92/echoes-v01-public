@@ -1,9 +1,7 @@
-// utils/generateCodexEntry.js
-
 /**
  * Creates a new Codex entry via the LLM endpoint
  */
-export async function generateCodexEntry(domain, contextEvents) {
+export async function generateCodexEntry(domain: string, contextEvents: any[]): Promise<{ title: string; content: string }> {
   const res = await fetch("/api/superpower", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
