@@ -11,6 +11,8 @@ export default function ReflectionPage() {
   const [letter, setLetter] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [note, setNote] = useState<string>("");
+  const [saved, setSaved] = useState(false);
 
   useEffect(() => {
     const history = localStorage.getItem("echoes_history");
@@ -35,21 +37,13 @@ export default function ReflectionPage() {
             history: JSON.parse(history),
             scenario,
             hero,
-            superpower, // Pass superpower for personalized reflection
+            superpower,
           }),
         });
 
         if (!res.ok) throw new Error("Failed to fetch reflection letter");
         const data = await res.json();
         setLetter(data.letter);
-
-        // Update codex with new journey or append to existing branch
-        addCodexJourney({
-          domain,
-          hero,
-          superpower,
-          letter: data.letter,
-        });
       } catch (err) {
         console.error(err);
         setError("Could not generate reflection letter. Please try again.");
@@ -60,6 +54,22 @@ export default function ReflectionPage() {
 
     fetchLetter();
   }, [router]);
+
+  const handleSave = () => {
+    const superpower = localStorage.getItem("echoes_superpower");
+    const domain = localStorage.getItem("echoes_domain");
+    const hero = localStorage.getItem("echoes_hero");
+    if (letter && domain && hero && superpower) {
+      addCodexJourney({
+        domain,
+        hero,
+        superpower,
+        letter,
+        note,
+      });
+      setSaved(true);
+    }
+  };
 
   const handleContinue = () => {
     localStorage.removeItem("echoes_history");
@@ -95,8 +105,27 @@ export default function ReflectionPage() {
             Restart Experience
           </button>
         </section>
+      ) : !saved ? (
+        <section className="w-full max-w-2xl space-y-6 text-gold text-center">
+          <ReflectionLetter letter={letter ?? ""} onContinue={() => {}} />
+          <input
+            type="text"
+            placeholder="Add a note about this reflection (optional)"
+            value={note}
+            onChange={e => setNote(e.target.value)}
+            className="w-full rounded bg-transparent border border-gold/40 px-3 py-2 mt-4"
+          />
+          <button onClick={handleSave} className="btn-primary mt-2">
+            Save to Codex
+          </button>
+        </section>
       ) : (
-        <ReflectionLetter letter={letter ?? ""} onContinue={handleContinue} />
+        <section className="text-center space-y-4">
+          <p className="text-green-400">Saved to your Codex!</p>
+          <button onClick={handleContinue} className="btn-primary">
+            Continue
+          </button>
+        </section>
       )}
     </main>
   );
