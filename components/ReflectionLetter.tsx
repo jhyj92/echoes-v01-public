@@ -1,5 +1,3 @@
-// /components/ReflectionLetter.tsx
-
 import { useEffect, useState } from "react";
 import LatencyOverlay from "./LatencyOverlay";
 
@@ -12,11 +10,8 @@ export default function ReflectionLetter({ letter, onContinue }: ReflectionLette
   const [isReady, setIsReady] = useState(false);
 
   useEffect(() => {
-    // Simulate "thinking" time before displaying the letter
-    const timeout = setTimeout(() => {
-      setIsReady(true);
-    }, 1500);
-
+    // Simulate "thinking" delay before showing letter
+    const timeout = setTimeout(() => setIsReady(true), 1500);
     return () => clearTimeout(timeout);
   }, []);
 
@@ -30,7 +25,7 @@ export default function ReflectionLetter({ letter, onContinue }: ReflectionLette
       <p className="max-w-2xl text-lg whitespace-pre-wrap">{letter}</p>
       <button
         onClick={onContinue}
-        className="px-6 py-2 bg-gold text-black rounded hover:bg-yellow-500 transition"
+        className="px-6 py-2 bg-gold text-black rounded hover:bg-yellow-500 focus:outline-none focus:ring-2 focus:ring-yellow-400 transition"
       >
         Continue
       </button>
