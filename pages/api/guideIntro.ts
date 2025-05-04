@@ -42,7 +42,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   const safeReflections = reflections.map((s: string) => s.replace(/[\r\n]+/g, " ").trim());
 
   const prompt = `
-Now that I’ve chosen my domain, invite me gently into a world where someone might need my help. Ask me about the kinds of stories and heroes I admire. Use my preferences to suggest a few figures (real or fictional) who could be facing something difficult. These should feel like natural ideas, not extreme crises. Keep it conversational and warm — like brainstorming together. Let me choose or offer my own.
+Invite me into a world where someone might need my help. Ask me a few questions to identify my favourite movies, books, TV shows, current events, and/or historical periods I admire. Use my preferences to suggest a few figures (real or fictional) who could be facing something difficult. These should feel like natural ideas, not extreme crises. Keep it conversational and warm - like brainstorming together. Let me choose or offer my own.
 
 Domain: ${domain}
 Reflections so far: ${safeReflections.join(" | ")}
