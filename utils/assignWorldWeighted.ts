@@ -1,4 +1,4 @@
-import { WORLDS } from "@/data/worlds";
+import WORLDS from "@/data/worlds";
 
 /**
  * Weighted world assignment:
