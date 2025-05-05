@@ -1,9 +1,63 @@
 import type { NextApiRequest, NextApiResponse } from "next";
-import { GoogleGenAI } from "@google/genai";
 import dotenv from "dotenv";
 
 dotenv.config();
-const gemini = new GoogleGenAI({ apiKey: process.env.GEMINI_KEY! });
+
+const OR_KEYS = (process.env.OPENROUTER_KEYS || "")
+  .split(",")
+  .map((k) => k.trim())
+  .filter(Boolean);
+
+let orIndex = 0;
+function nextOrKey() {
+  const key = OR_KEYS[orIndex % OR_KEYS.length];
+  orIndex++;
+  return key;
+}
+
+async function callOpenRouterModel(prompt: string, timeout = 5000): Promise<string | null> {
+  if (OR_KEYS.length === 0) {
+    console.error("No OpenRouter API keys provided!");
+    return null;
+  }
+
+  for (let i = 0; i < OR_KEYS.length; i++) {
+    const key = nextOrKey();
+    try {
+      const body = {
+        model: "deepseek/deepseek-chat-v3-0324:free",
+        messages: [
+          { role: "system", content: "You are a creative storyteller." },
+          { role: "user", content: prompt },
+        ],
+        temperature: 0.8,
+      };
+
+      const res = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${key}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(body),
+        signal: AbortSignal.timeout(timeout),
+      });
+
+      if (!res.ok) {
+        const errText = await res.text();
+        console.error(`OpenRouter error response: ${errText}`);
+        continue;
+      }
+
+      const json = await res.json();
+      const content = json.choices?.[0]?.message?.content?.trim();
+      if (content) return content;
+    } catch (e) {
+      console.error(`OpenRouter model error:`, e);
+    }
+  }
+  return null;
+}
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== "POST") {
@@ -21,18 +75,15 @@ Based on my reflections, domain, and superpower, imagine five characters-real or
 Domain: ${domain}
 Superpower: ${superpower}
 Reflections: ${reflections.join(" | ")}
-`;
+  `.trim();
 
   try {
-    const resp = await gemini.models.generateContent({
-      model: "gemini-2.0-flash-lite",
-      contents: [prompt],
-    });
+    const text = await callOpenRouterModel(prompt, 7000);
 
-    if (resp?.text?.trim()) {
-      const options = resp.text
+    if (text) {
+      const options = text
         .split(/\n+/)
-        .map(line => {
+        .map((line) => {
           const match = line.match(/^(.*?)[–:\-]+(.*)$/);
           if (match) {
             return {
@@ -48,9 +99,8 @@ Reflections: ${reflections.join(" | ")}
         return res.status(200).json({ options });
       }
     }
-    // If no valid options parsed, fallback below
   } catch (error) {
-    console.error("suggestHeroScenario error:", error);
+    console.error("Error generating hero scenarios:", error);
     return res.status(500).json({ error: "Internal server error" });
   }
 
