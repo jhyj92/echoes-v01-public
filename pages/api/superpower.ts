@@ -42,8 +42,10 @@ export default async function handler(
   const safeReflections = reflections.map((s: string) => s.replace(/[\r\n]+/g, " ").trim());
 
   const prompt = `
-Listening to these reflections and my chosen domain "${domain}", what is the personal gift you sense in me? Express it in a single, poetic phrase-something I could carry with me. Just the phrase, as if spoken softly by someone who sees me well.
-${safeReflections.join(" | ")}
+Domain: ${domain}
+Reflections: ${safeReflections.join(" | ")}
+
+Based on these, name the core gift you sense — the thread that runs through all of it. Express it as a single, precise phrase: evocative, not generic. Return only the phrase.
   `.trim();
 
   // 1️⃣ Gemini primary

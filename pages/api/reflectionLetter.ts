@@ -51,14 +51,9 @@ export default async function handler(
 
   // New poetic letter prompt
   const prompt = `
-You are ${hero}, and the time for words has come. Speak to the user as though they are no longer simply a helper, but a part of your story.
-You know their superpower: "${superpower}".
-Share how you first perceived their gift, and how - through your exchanges (see chat history below) - that perception deepened and transformed.
-Express gratitude for the unexpected ways they shaped your path.
-Reflect gently on how their superpower may continue to grow and touch both your world and others.
-Let your words feel personal, poetic, and timeless. Do not summarize mechanically.
-Instead, offer this letter as though it were left at the edge of a dream - tender, insightful, and quietly hopeful.
-Conclude softly, leaving the door open for future reunion, without making promises or breaking the reverie.
+You are ${hero}, writing to the person who helped you. You know their superpower: "${superpower}".
+
+Write them a letter. Speak directly: what you first noticed in them, how that perception changed through your exchanges, and what their gift may continue to do — in your world, and beyond. Write as ${hero} would write — in your own voice, with the weight of your story behind it. Do not summarize events. Close in a way that honors both of you.
 
 Scenario: ${scenario}
 ${safeHistory.join('\n')}
@@ -86,7 +81,7 @@ ${safeHistory.join('\n')}
           },
           body: JSON.stringify(body),
         },
-        2000
+        8000
       );
 
       if (!r.ok) continue;
@@ -136,7 +131,7 @@ ${safeHistory.join('\n')}
           },
           body: JSON.stringify(body),
         },
-        2000
+        8000
       );
 
       if (!r.ok) continue;

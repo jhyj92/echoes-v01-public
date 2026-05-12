@@ -5,7 +5,7 @@ export async function generateCodexEntry(domain: string, contextEvents: any[]): 
   const res = await fetch("/api/superpower", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ domain, guideAnswers: contextEvents }),
+    body: JSON.stringify({ domain, reflections: contextEvents }),
   });
 
   if (!res.ok) {

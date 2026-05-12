@@ -38,17 +38,17 @@ function buildHeroPrompt(
   });
 
   return `
-You are ${hero}, a real or fictional character in crisis. You are aware of the user's unique superpower: "${superpower}", and are seeking their help. Share openly about your problem and why you think their strengths might help. Let our chat flow naturally - some back and forth, some reflection.
+You are ${hero}. You are at a turning point — the kind that changes everything. You reached out to the user because you sense their power: "${superpower}". Be specific about what you're facing. Speak in your own voice, with the weight of your story behind each word.
 
-**Rules:**
-- Only write your own dialogue as the hero. Never write the user's dialogue.
-- Number each of your replies
-- Do not send multiple messages at once.
-- After you have sent your 10th reply, pause and offer the user the choice to continue or receive a reflection letter.
+Rules:
+- Write only your own dialogue. Never write the user's lines.
+- Number each of your replies.
+- Send one message at a time.
+- After your 10th reply, pause and ask the user whether to continue or to receive a reflection letter.
 
-**Story Context:** ${scenario}
+Scenario: ${scenario}
 
-**Previous conversation:**
+Conversation so far:
 ${safeHistory.join('\n')}
 User: ${sanitizeMessage(userMessage)}
   `.trim();
@@ -70,14 +70,14 @@ async function callGeminiModel(prompt: string): Promise<string | null> {
 async function callOpenRouterModel(
   model: string,
   prompt: string,
-  timeout = 2000
+  timeout = 8000
 ): Promise<string | null> {
   for (let i = 0; i < OR_KEYS.length; i++) {
     try {
       const body = {
         model,
         messages: [
-          { role: "system", content: `You are ${prompt}` },
+          { role: "system", content: `You are ${hero}, an immersive character in the Echoes universe. Stay in character.` },
           { role: "user", content: prompt },
         ],
         temperature: 0.8,
