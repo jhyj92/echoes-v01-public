@@ -41,11 +41,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   const safeAnswers = answers.map((s: string) => s.replace(/[\r\n]+/g, " ").trim());
 
   const prompt = `
-You know me a little now. Based on what I shared, offer five simple but meaningful domains that might describe where my quiet strengths live. These should feel like areas I could explore, not labels or tests. Use short, evocative phrases that sound personal and inviting - not overly grand or dramatic.
+Answers: ${safeAnswers.join(" | ")}
 
-Here are my answers: ${safeAnswers.join(" | ")}
+Based on these, identify five domains where this person's quiet strengths live. Each domain should be a short, specific phrase — evocative but grounded, not grand titles or abstract concepts. Areas they could actually inhabit and grow.
 
-Return just a list of five domains, separated by line breaks or commas. No meta commentary.
+Return five domains only, one per line. No explanations, no numbering.
   `.trim();
 
   // Try OpenRouter models first

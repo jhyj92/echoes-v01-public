@@ -15,7 +15,7 @@ function nextOrKey() {
   return key;
 }
 
-async function callOpenRouterModel(prompt: string, timeout = 5000): Promise<string | null> {
+async function callOpenRouterModel(prompt: string, timeout = 8000): Promise<string | null> {
   if (OR_KEYS.length === 0) {
     console.error("No OpenRouter API keys provided!");
     return null;
@@ -70,15 +70,15 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   }
 
   const prompt = `
-Based on my reflections, domain, and superpower, imagine five characters-real or fictional-who might seek my help at a turning point in their epic story. For each, share their name and an opening scene where my gift could make a difference. Each should feel like an open door to a meaningful encounter, not a dramatic rescue.
-
 Domain: ${domain}
 Superpower: ${superpower}
 Reflections: ${reflections.join(" | ")}
+
+Suggest five characters — real or fictional — who are at a genuine turning point and would seek someone with this superpower. For each, provide: their name and one sentence describing the specific moment they need help. Ground the scenarios in character, not crisis. Format strictly as: Name – Scene description.
   `.trim();
 
   try {
-    const text = await callOpenRouterModel(prompt, 7000);
+    const text = await callOpenRouterModel(prompt);
 
     if (text) {
       const options = text

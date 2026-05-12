@@ -42,12 +42,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   const safeReflections = reflections.map((s: string) => s.replace(/[\r\n]+/g, " ").trim());
 
   const prompt = `
-Invite me into a world where someone might need my help. Ask me a few questions to identify my favourite movies, books, TV shows, current events, and/or historical periods I admire. Use my preferences to suggest a few figures (real or fictional) who could be facing something difficult. These should feel like natural ideas, not extreme crises. Keep it conversational and warm - like brainstorming together. Let me choose or offer my own.
-
 Domain: ${domain}
 Reflections so far: ${safeReflections.join(" | ")}
 
-Ask the next open-ended question (number ${idx + 1}) that invites me to share about stories or heroes I connect with. Return only the question, no extra commentary.
+Ask question ${idx + 1}: a single question that explores which stories, eras, or figures this person connects with — real or fictional. You're mapping their imagination to find the right hero encounter later. Return only the question.
   `.trim();
 
   for (let i = 0; i < OR_KEYS.length; i++) {
@@ -55,7 +53,7 @@ Ask the next open-ended question (number ${idx + 1}) that invites me to share ab
       const body = {
         model: "deepseek/deepseek-chat-v3-0324:free",
         messages: [
-          { role: "system", content: "You are Echoes, a thoughtful and gentle companion." },
+          { role: "system", content: "You are Echoes, drawing out the stories that live in a person." },
           { role: "user", content: prompt },
         ],
         temperature: 0.8,
@@ -71,7 +69,7 @@ Ask the next open-ended question (number ${idx + 1}) that invites me to share ab
           },
           body: JSON.stringify(body),
         },
-        2000
+        8000
       );
 
       if (!response.ok) continue;
